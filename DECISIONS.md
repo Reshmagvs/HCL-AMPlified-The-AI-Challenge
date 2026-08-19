@@ -122,3 +122,101 @@ has zero *unmet* prerequisites by definition, so the implemented key uses the
 node's prerequisite count **within the gap subset** — a stable static property
 that expresses the same intent (simpler nodes first) and keeps the ordering
 total.
+
+---
+
+## Phase 2 — Catalog pipeline
+
+**The brief's model ids no longer exist.** `gemini-2.0-flash` returns 404 ("no
+longer available") and `text-embedding-004` is not served for `embedContent`.
+The live account offers `gemini-3.x` generation models and
+`gemini-embedding-001` / `gemini-embedding-2`. This is a factual change in the
+provider, not a design decision, so the brief's exact ids could not be honoured.
+Current settings: **`gemini-3.5-flash-lite`** for generation and
+**`gemini-embedding-2`** for embeddings, both overridable in `.env`.
+
+**Why flash-lite.** `gemini-flash-latest` resolves to `gemini-3.7-flash`, whose
+free tier allows **5 requests per minute** — 152 skill nodes would have taken
+over half an hour of pure rate-limit waiting. `gemini-3.5-flash-lite` sustained
+8 rapid calls with no 429 and produced comparably good recall of stable URLs.
+Verification discards anything it got wrong regardless.
+
+**Why `gemini-embedding-2`.** `gemini-embedding-001` hit its **daily** free-tier
+quota partway through the build. Quota is per-model, so switching models
+unblocked it. Output is capped at 768 dimensions via `output_dimensionality`,
+which keeps the committed `.npy` files at ~1.3 MB.
+
+**Six harvest passes, not one.** A single pass returned 213 candidates — roughly
+one per skill, and the same three obvious links every time. Passes are additive
+(`--append`, merged by URL) and steerable (`--emphasis video|docs|india`), which
+took the raw pool to 856 candidates with real variety: 42 video, 77 interactive,
+58 course, 249 text. Without the emphasis passes the catalog had **one** video
+resource in it, which would have made the format preference decorative.
+
+**Two verifier bugs found by testing, both real.**
+- *HEAD is not conclusive.* Kaggle answers `HEAD` with 404 and `GET` with 200 on
+  the same URL. The original code only retried GET on 403/405/400/501, silently
+  discarding 29 working resources. It now always tries GET before discarding.
+- *Dedup was case- and scheme-sensitive.* `https://…/@StatQuest` and
+  `https://…/@statquest` were treated as different resources, and one candidate
+  redirected from https to http and was stored as http. The normaliser now drops
+  the scheme and lowercases the path, and any final URL that is not https is
+  discarded outright.
+
+**Final numbers.** 856 proposed → **426 verified**, 152/152 skills covered,
+every assessable node has at least one resource, **99.8% free**. The 400+ target
+is met. Discards: 92× 404, 50× 403, 3× 429, 3× redirect-to-homepage, 2× 500,
+2× unreachable. The 403s are mostly bot-protected hosts serving real content;
+they are dropped anyway, because "returns 2xx" is the only check that cannot be
+argued with.
+
+**Embedding matrices are per provider.** Mock and Gemini vectors live in
+different spaces, so a query embedded by one cannot be compared against a matrix
+built by the other. Both sets are committed (`*_embeddings.npy` for Gemini,
+`*_embeddings.mock.npy` for the offline vectoriser) and `core.retrieval` picks
+by active provider. Without this, a clone with no API key would have been
+comparing its query against noise.
+
+**`build_embeddings` was silently not caching.** It never called `init_db()`, so
+the `EmbeddingCache` table did not exist and every read and write failed into a
+debug-level log. Fixed; re-runs now cost only the changed rows.
+
+## Phases 3–7 — boundary, intake, diagnostic, planner, adaptation
+
+**`routers/path.py` was split into `path.py` + `adaptation.py`.** Generation and
+adaptation share the `/api/path` prefix but answer different questions, and
+keeping them together would have meant Phase 6's commit importing `core/adapt.py`
+from Phase 7 — a commit with a forward dependency. The split is better structure
+independently: two ~90-line routers instead of one 200-line one.
+
+**Milestones fire once per track, not on every track switch.** The first
+implementation inserted a checkpoint whenever consecutive items changed track,
+which produced **seventeen** quizzes in one ML path — a topological order
+interleaves foundations with domain work constantly. A checkpoint now goes after
+the *last* item of each track, which is the boundary that actually means
+something. Caught by a test asserting `len(milestones) == len(tracks)`.
+
+**Packing spills rather than overflowing.** "Never split a resource across more
+than two weeks" is unsatisfiable at `hours_per_week=1` with a 14-hour resource.
+The packer charges an item's hours across as many consecutive weeks as its own
+duration requires, and an item's `week_number` is where it *starts*. The
+invariant tested is on the ledger: no week is ever allocated more than
+`hours_per_week`. At any sane capacity the two-week rule holds naturally.
+
+**Claim matching uses a relative margin, not an absolute threshold.** A fixed
+cosine cut-off does not transfer between providers — mock puts "Python Basics"
+at 0.47 against the right node and Gemini much higher. A claim is now accepted
+only when the best match is ≥1.35× the runner-up, which expresses "unambiguous"
+in a provider-independent way. A vague claim matches nothing and is dropped.
+
+**A recognised claim seeds exactly 0.4**, not a similarity-scaled fraction of
+it. Scaling implied a precision self-report does not have; what matters is that
+0.4 is below the 0.7 threshold either way.
+
+**Milestone items are not sent to the model for narration.** They carry their
+own copy and no provenance record, and passing one to `render_template` raised
+`KeyError: 'why_needed'` — found by the first end-to-end test.
+
+**`_earliest_week` uses prerequisite *finish* weeks, not start weeks**, so a
+long prerequisite that spills across three weeks does not get overlapped by its
+dependent.

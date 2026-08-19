@@ -156,6 +156,18 @@ def skills_by_resource() -> dict[str, list[Resource]]:
     return index
 
 
+def matrix_path(kind: str, provider: str) -> Path:
+    """Where one provider's matrix lives.
+
+    Mock and Gemini vectors live in different spaces, so a query embedded by one
+    can never be compared against a matrix built by the other. Suffixing the
+    filename by provider keeps both sets committed side by side, which is what
+    lets a clone with no API key resolve goals sensibly rather than against noise.
+    """
+    suffix = "" if provider == "gemini" else f".{provider}"
+    return get_settings().data_dir / f"{kind}_embeddings{suffix}.npy"
+
+
 def _load_matrix(path: Path, expected_rows: int, label: str) -> np.ndarray | None:
     if not path.exists():
         logger.warning("%s embeddings missing at %s", label, path)
@@ -177,19 +189,18 @@ def load_matrices() -> dict[str, Any]:
     """Load both embedding matrices plus the id -> row index maps."""
     from app.core.skill_graph import load_graph
 
-    settings = get_settings()
+    from app.llm import get_provider
+
     catalog = load_catalog()
     skill_ids = sorted(load_graph().nodes)
+    provider = get_provider().name
 
     return {
-        "catalog": _load_matrix(
-            settings.data_dir / "catalog_embeddings.npy", len(catalog), "catalog"
-        ),
+        "provider": provider,
+        "catalog": _load_matrix(matrix_path("catalog", provider), len(catalog), "catalog"),
         "catalog_ids": [r.id for r in catalog],
         "catalog_row": {r.id: i for i, r in enumerate(catalog)},
-        "skills": _load_matrix(
-            settings.data_dir / "skill_embeddings.npy", len(skill_ids), "skill"
-        ),
+        "skills": _load_matrix(matrix_path("skill", provider), len(skill_ids), "skill"),
         "skill_ids": skill_ids,
         "skill_row": {s: i for i, s in enumerate(skill_ids)},
     }

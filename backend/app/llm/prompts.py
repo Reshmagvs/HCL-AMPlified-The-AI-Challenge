@@ -187,3 +187,70 @@ Return JSON:
 
 Up to 6 entries. Output JSON only.
 """.replace("{mark}", MARK_HARVEST)
+
+
+HARVEST_CANDIDATES_BATCH = """{mark}
+Propose real, currently-online learning resources for each skill listed below.
+
+These are CANDIDATES. Every URL you return will be fetched over HTTP and any
+that does not return 2xx will be discarded, so a guessed URL is wasted output.
+Three entries you are confident about beat eight you are not. It is fine to
+return fewer for a skill you know little about, and fine to reuse the same URL
+for two skills when one resource genuinely covers both.
+
+SKILLS:
+{skill_block}
+
+Strongly prefer these stable providers and their canonical, long-lived URLs:
+freeCodeCamp, MIT OpenCourseWare, NPTEL, SWAYAM, Khan Academy, Kaggle Learn,
+The Odin Project, CS50 / Harvard, official documentation (python.org, MDN,
+scikit-learn, PyTorch, React, Docker, Kubernetes, AWS, PostgreSQL, OWASP,
+Terraform, Git), Google Developers, Microsoft Learn, W3Schools, GeeksforGeeks,
+Real Python, Wikipedia for foundational mathematics, Coursera and edX audit
+tracks.
+
+Prefer a provider's stable landing page over a deep link that may have moved.
+Do not use URL shorteners, search-result URLs, or youtube.com/watch links.
+Aim for at least 80 percent free resources overall.
+
+{emphasis}
+
+Return JSON shaped exactly like this, with one key per skill id given above:
+{{"by_skill": {{
+  "<skill.id>": [
+    {{"title": "<exact title>", "provider": "<name>", "url": "https://...",
+      "format": "video"|"text"|"interactive"|"course",
+      "cost": "free"|"paid",
+      "duration_hours": <number greater than 0>,
+      "level": "beginner"|"intermediate"|"advanced",
+      "rating": <number 3.5-5.0>,
+      "description": "<one sentence>"}}
+  ]
+}}}}
+
+Up to 5 entries per skill. Output JSON only, no prose, no markdown fences.
+""".replace("{mark}", MARK_HARVEST)
+
+
+# Optional steering appended to the batch harvest prompt. Several passes with
+# different emphasis produce a catalog with real variety in format, provider and
+# region -- one pass alone returns the same three obvious links every time.
+EMPHASIS_DEFAULT = ""
+
+EMPHASIS_VIDEO = """This pass is specifically for VIDEO resources. Return
+lecture series, recorded courses and video tutorials, and set "format" to
+"video". YouTube is acceptable here, but only stable playlist or channel URLs
+(youtube.com/playlist?list=... or youtube.com/@handle) -- never an individual
+watch?v= link, which rots. NPTEL and SWAYAM video course pages, MIT
+OpenCourseWare video lecture pages, freeCodeCamp's YouTube channel and Khan
+Academy video units are all good answers."""
+
+EMPHASIS_INDIA = """This pass should favour resources from Indian public
+education platforms and other providers that work well on a limited data plan:
+NPTEL, SWAYAM, IIT course pages, and text-first documentation. Prefer "text"
+format where the content genuinely is text."""
+
+EMPHASIS_DOCS = """This pass should favour official documentation, reference
+guides and first-party tutorials from the maintainers of the technology itself
+(python.org, MDN, scikit-learn, PyTorch, React, Docker, Kubernetes, PostgreSQL,
+Terraform, OWASP, Git). These are the longest-lived URLs on the web."""

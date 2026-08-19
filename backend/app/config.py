@@ -30,8 +30,8 @@ class Settings(BaseSettings):
     # --- LLM ---------------------------------------------------------------
     llm_provider: str = "mock"
     gemini_api_key: str = ""
-    gemini_model: str = "gemini-2.0-flash"
-    gemini_embed_model: str = "text-embedding-004"
+    gemini_model: str = "gemini-3.5-flash-lite"
+    gemini_embed_model: str = "gemini-embedding-2"
     embedding_dim: int = 768
 
     # --- Storage -----------------------------------------------------------

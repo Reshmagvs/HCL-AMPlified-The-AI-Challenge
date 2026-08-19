@@ -81,6 +81,7 @@ class GeminiProvider(LLMProvider):
                 text = (response.text or "").strip()
                 if not text:
                     raise ProviderUnavailable("gemini returned an empty completion")
+                self._broken = False  # a success clears an earlier transient failure
                 return text
             except Exception as exc:  # noqa: BLE001 -- SDK raises a wide family
                 if attempt == 1 and _is_retryable(exc):
@@ -120,8 +121,14 @@ class GeminiProvider(LLMProvider):
         for attempt in (1, 2):
             try:
                 response = self.client.models.embed_content(
-                    model=self.settings.gemini_embed_model, contents=texts
+                    model=self.settings.gemini_embed_model,
+                    contents=texts,
+                    config={
+                        "output_dimensionality": self.settings.embedding_dim,
+                        "task_type": "SEMANTIC_SIMILARITY",
+                    },
                 )
+                self._broken = False
                 return [list(e.values) for e in response.embeddings]
             except Exception as exc:  # noqa: BLE001
                 if attempt == 1 and _is_retryable(exc):
