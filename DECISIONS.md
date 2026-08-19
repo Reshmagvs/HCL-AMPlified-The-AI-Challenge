@@ -303,3 +303,37 @@ the length is checked rather than guessed.
 seconds** of a four-minute budget and invites a typo on take five. It builds a
 learner with a completed diagnostic, a generated path and three completed steps
 in about two seconds, with no model calls.
+
+---
+
+## Phase 10 — Full system verification
+
+**Two bugs found by executing the product that the test suite had not caught.**
+Both are written up in `TEST_REPORT.md`; the short version is that
+`milestone_failed` was effectively a no-op whenever the skill it pointed at was
+already in the gap, and `run.bat` used `timeout /t`, which fails outright when
+stdin is redirected. Neither was visible from reading the code or from `pytest`.
+
+**The one "dead" catalog link is alive.** `nmap.org/book/man.html` failed the
+concurrent audit with a TLS handshake timeout and returns 200 on an individual
+re-check. It was left in the catalog and the report says exactly that, rather
+than quietly removing an entry to make a number read 100%.
+
+**`git archive` is the recommended way to produce the submission ZIP.** Zipping
+the working directory by hand would include `.venv` and `node_modules`;
+`git archive --format=zip -o lodestar-submission.zip HEAD` emits exactly what is
+committed, which is 2.2 MB and verified to bootstrap from nothing.
+
+**`/health` reporting `llm_available: true` for an unverified key is
+deliberate.** Verifying at startup would spend an API request on every boot and
+make a sub-50ms endpoint depend on the network. The flag self-corrects after the
+first failed call, which is fast enough for the badge to be honest in practice.
+
+### Still-open temptations, noted and not built
+- Code-splitting the ReactFlow and Recharts routes. The bundle is 760 kB raw,
+  228 kB gzipped. Worth doing for a real product, out of scope here.
+- A second reviewer for the twenty gold path lengths. They are one person's
+  judgement, which is the weakest number in the evaluation.
+- Verifying catalog metadata (duration, level, rating) rather than only the URL.
+  That needs a human opening 426 pages, which was the constraint the
+  propose-then-verify pipeline exists to work around.

@@ -170,13 +170,44 @@ def _too_hard(mastery: MasteryTable, items: list[Any], payload: dict[str, Any]) 
 
 
 def _milestone_failed(mastery: MasteryTable, items: list[Any], payload: dict[str, Any]) -> EventOutcome:
-    """A failed checkpoint drops the covered skill back below threshold."""
+    """A failed checkpoint drops everything it covered back below threshold.
+
+    A track checkpoint tests the whole block behind it, so failing it is evidence
+    about that block -- not about the single skill the milestone row happens to
+    point at. Demoting only that one skill left the path unchanged whenever the
+    skill was already in the gap, which made the event look like it had done
+    nothing.
+    """
     item = _require_item(items, payload, "milestone_failed")
-    skills = payload.get("skill_ids") or [item.skill_id]
+    skills = list(payload.get("skill_ids") or [])
+    covered: list[Any] = []
+
+    if not skills and item.kind == "milestone":
+        track = (item.provenance.get("milestone") or {}).get("track")
+        covered = [
+            other
+            for other in items
+            if other.kind == "resource"
+            and other.order_index <= item.order_index
+            and other.provenance.get("track") == track
+            and mastery.is_mastered(other.skill_id)
+        ]
+        skills = sorted({other.skill_id for other in covered})
+    if not skills:
+        skills = [item.skill_id]
+
     for skill_id in skills:
         mastery.set(skill_id, MILESTONE_FAIL_SCORE, "milestone", confidence=1.0, force=True)
+
+    # Re-open the steps the checkpoint covered. Without this, `carry_over_status`
+    # would faithfully copy their "done" flag into the regenerated path and the
+    # learner would see remediation they are already marked as having finished.
+    for other in covered:
+        other.status = "pending"
+
     return EventOutcome(
         message=f"Checkpoint failed. Remediation for {len(skills)} skill(s) returns to the path.",
+        touched_items=covered,
         log={"skills": list(skills), "new_score": MILESTONE_FAIL_SCORE},
     )
 
