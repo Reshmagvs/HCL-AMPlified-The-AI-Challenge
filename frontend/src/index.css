@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    @apply bg-ink-950 text-mist-100 font-sans antialiased;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 15% -10%, rgba(245, 147, 49, 0.09), transparent 60%),
+      radial-gradient(ellipse 70% 50% at 100% 0%, rgba(55, 73, 122, 0.28), transparent 65%);
+    background-attachment: fixed;
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-ink-700;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ember-500/70 ring-offset-2 ring-offset-ink-950;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-ink-700/70 bg-ink-900/70 backdrop-blur-sm shadow-lg shadow-black/30;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-ink-600 bg-ink-800/80 px-2.5 py-1 text-xs font-medium text-mist-300;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn bg-ember-500 text-ink-950 hover:bg-ember-400;
+  }
+  .btn-ghost {
+    @apply btn border border-ink-600 text-mist-300 hover:border-ink-500 hover:text-mist-100;
+  }
+
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-wider text-mist-500;
+  }
+}
+
+/* The node-and-edge motif: a faint constellation rule used between sections. */
+.edge-rule {
+  height: 1px;
+  background-image: linear-gradient(
+    90deg,
+    transparent,
+    rgba(174, 185, 214, 0.28) 20%,
+    rgba(245, 147, 49, 0.45) 50%,
+    rgba(174, 185, 214, 0.28) 80%,
+    transparent
+  );
+}

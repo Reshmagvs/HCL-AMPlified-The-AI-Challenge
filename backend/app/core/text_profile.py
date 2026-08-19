@@ -1,0 +1,170 @@
+"""Deterministic profile extraction from free text.
+
+This is the floor under the intake conversation. When the LLM is unavailable --
+or when it returns something that fails schema validation twice -- intake still
+has to produce a usable profile rather than a 500. So the same regex-and-keyword
+extractor is used in two places: as the offline mock provider's answer, and as
+the degraded fallback in the intake router.
+
+It is deliberately conservative. Every rule below only fires on an explicit
+statement ("6 hours a week", "free only"); anything not said stays ``None``,
+because a fabricated field is worse than a missing one.
+"""
+
+from __future__ import annotations
+
+import re
+from typing import Any
+
+_HOURS_RE = re.compile(
+    r"(\d+(?:\.\d+)?)\s*\+?\s*(?:hours?|hrs?|h)\b[^.]{0,20}?(?:per|a|each|/)\s*week", re.I
+)
+_HOURS_ALT_RE = re.compile(
+    r"(?:per|a|each)\s*week[^.]{0,20}?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b", re.I
+)
+_DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
+_GOAL_RE = re.compile(
+    r"(?:i\s+want\s+to\s+(?:be|become|learn|get\s+into|build|work)|"
+    r"my\s+goal\s+is\s+to|i'?m\s+aiming\s+to|i\s+would\s+like\s+to|"
+    r"help\s+me\s+(?:become|learn|get\s+into)|i\s+need\s+to\s+learn)\b(.{3,160})",
+    re.I,
+)
+_COMPLETED_RE = re.compile(
+    r"(?:i\s+(?:already\s+)?know|i'?ve\s+(?:done|used|learned|studied|completed)|"
+    r"i\s+am\s+familiar\s+with|comfortable\s+with|experience\s+with|good\s+at)\b(.{3,120})",
+    re.I,
+)
+
+# A captured clause ends where the learner starts a new thought.
+_STOP_TAIL = re.compile(
+    r"(?:,\s*|\s+)(?:but|so\s+i|because|since|though|however|and\s+i\s+\w+|i\s+want|"
+    r"i'?m\s+aiming|my\s+goal|i'?ve|i\s+have|i\s+can|i\s+only|i\s+prefer)\b.*$",
+    re.I,
+)
+# Fragments that describe a constraint, not a skill the learner claims to have.
+_CONSTRAINT_RE = re.compile(r"\d|\bfree\b|\bhours?\b|\bweek\b|\bbudget\b|\bpaid\b", re.I)
+_SPLIT_RE = re.compile(r",|\band\b|/|;", re.I)
+
+_LEVEL_WORDS: dict[str, tuple[str, ...]] = {
+    "advanced": ("advanced", "expert", "senior", "years of experience", "professional"),
+    "intermediate": (
+        "intermediate", "some experience", "a bit of experience", "comfortable with",
+        "2nd year", "second year", "3rd year", "third year",
+    ),
+    "beginner": (
+        "beginner", "complete beginner", "new to", "no experience", "just starting",
+        "from scratch", "1st year", "first year",
+    ),
+}
+_FORMAT_WORDS: dict[str, tuple[str, ...]] = {
+    "video": ("video", "watch", "lectures"),
+    "text": ("reading", "articles", "books", "written", "documentation", "text-based"),
+    "interactive": ("interactive", "hands on", "hands-on", "exercises", "practice"),
+}
+
+
+def _clean(fragment: str) -> str:
+    """Trim a captured fragment to a short, self-contained phrase."""
+    text = _STOP_TAIL.sub("", fragment).strip(" .,!?;:-")
+    return re.sub(r"\s+", " ", text)[:160]
+
+
+def _clean_goal(fragment: str) -> str:
+    """A goal stops at the first sentence or clause break; the rest is constraints."""
+    text = _clean(fragment)
+    for sep in (".", ",", ";", " with "):
+        text = text.split(sep)[0]
+    return text.strip(" .,!?;:-")[:160]
+
+
+def _find_hours(text: str) -> float | None:
+    for pattern in (_HOURS_RE, _HOURS_ALT_RE):
+        match = pattern.search(text)
+        if match:
+            hours = float(match.group(1))
+            if 0 < hours <= 80:
+                return hours
+    return None
+
+
+def _find_level(low: str) -> str | None:
+    for level, words in _LEVEL_WORDS.items():
+        if any(word in low for word in words):
+            return level
+    return None
+
+
+def _find_format(low: str) -> str | None:
+    hits = [fmt for fmt, words in _FORMAT_WORDS.items() if any(w in low for w in words)]
+    return hits[0] if len(hits) == 1 else None
+
+
+def _find_completed(text: str) -> list[str]:
+    """Pull claimed prior knowledge out of "I already know X, Y and Z" phrasing."""
+    found: list[str] = []
+    for match in _COMPLETED_RE.finditer(text):
+        for part in _SPLIT_RE.split(_clean(match.group(1))):
+            item = part.strip(" .,!?;:-")
+            if 1 < len(item) <= 40 and not _CONSTRAINT_RE.search(item):
+                found.append(item)
+    seen: set[str] = set()
+    return [x for x in found if not (x.lower() in seen or seen.add(x.lower()))][:8]
+
+
+def extract_profile(text: str, existing: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Merge whatever ``text`` explicitly states into ``existing``.
+
+    Existing values win unless a field is currently unset -- intake is additive,
+    and a later message must not blank out something already established.
+    """
+    profile: dict[str, Any] = dict(existing or {})
+    low = text.lower()
+
+    updates: dict[str, Any] = {
+        "hours_per_week": _find_hours(text),
+        "experience_level": _find_level(low),
+        "format_pref": _find_format(low),
+    }
+
+    goal_match = _GOAL_RE.search(text)
+    if goal_match:
+        updates["goal_text"] = _clean_goal(goal_match.group(1))
+
+    if any(w in low for w in ("free only", "only free", "free resources", "can't pay",
+                              "cannot pay", "no money", "tight budget", "no budget")):
+        updates["cost_pref"] = "free"
+    if any(w in low for w in ("low bandwidth", "limited data", "slow internet",
+                              "data plan", "mobile data")):
+        updates["low_bandwidth"] = True
+        updates.setdefault("format_pref", "text")
+
+    date_match = _DATE_RE.search(text)
+    if date_match:
+        updates["target_date"] = date_match.group(0)
+
+    completed = _find_completed(text)
+    if completed:
+        updates["completed_skills"] = list(
+            dict.fromkeys([*(profile.get("completed_skills") or []), *completed])
+        )
+
+    for key, value in updates.items():
+        if value is not None and profile.get(key) in (None, "", [], "any"):
+            profile[key] = value
+    return profile
+
+
+def next_question(profile: dict[str, Any]) -> str:
+    """The single most useful thing still missing, phrased as a question."""
+    if not profile.get("goal_text"):
+        return "What would you like to be able to do? Describe the goal in your own words."
+    if not profile.get("hours_per_week"):
+        return (
+            f"Got it -- {profile['goal_text']}. Roughly how many hours a week "
+            "can you give this?"
+        )
+    if not profile.get("experience_level"):
+        return "How would you describe your current level: beginner, intermediate or advanced?"
+    if profile.get("cost_pref") in (None, "", "any"):
+        return "Should I stick to free resources only, or is paid material fine too?"
+    return "That is everything I need -- ready to build your path."
