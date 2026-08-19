@@ -1,0 +1,2885 @@
+[
+ {
+  "id": "prog.python_basics",
+  "name": "Python Basics",
+  "track": "foundations",
+  "description": "Variables, types, expressions and running your first Python programs.",
+  "prerequisites": [],
+  "difficulty": 1,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "syntax",
+   "variables",
+   "types",
+   "interpreter"
+  ]
+ },
+ {
+  "id": "prog.control_flow",
+  "name": "Control Flow",
+  "track": "foundations",
+  "description": "Conditionals, loops and the logic that makes a program branch.",
+  "prerequisites": [
+   "prog.python_basics"
+  ],
+  "difficulty": 1,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "if",
+   "for",
+   "while",
+   "boolean logic"
+  ]
+ },
+ {
+  "id": "prog.python_data_structures",
+  "name": "Lists, Dicts and Sets",
+  "track": "foundations",
+  "description": "The built-in collections and when each one is the right container.",
+  "prerequisites": [
+   "prog.control_flow"
+  ],
+  "difficulty": 2,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "list",
+   "dictionary",
+   "set",
+   "tuple",
+   "comprehension"
+  ]
+ },
+ {
+  "id": "prog.functions",
+  "name": "Functions and Scope",
+  "track": "foundations",
+  "description": "Decomposing a program into functions, arguments, return values and scope.",
+  "prerequisites": [
+   "prog.control_flow"
+  ],
+  "difficulty": 2,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "function",
+   "arguments",
+   "return",
+   "scope",
+   "recursion"
+  ]
+ },
+ {
+  "id": "prog.python_oop",
+  "name": "Object-Oriented Python",
+  "track": "foundations",
+  "description": "Classes, instances, inheritance and when objects beat plain functions.",
+  "prerequisites": [
+   "prog.functions",
+   "prog.python_data_structures"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "class",
+   "inheritance",
+   "encapsulation",
+   "dunder methods"
+  ]
+ },
+ {
+  "id": "prog.files_io",
+  "name": "Files and Serialisation",
+  "track": "foundations",
+  "description": "Reading and writing files, CSV and JSON, and handling encoding.",
+  "prerequisites": [
+   "prog.functions"
+  ],
+  "difficulty": 2,
+  "est_hours": 4,
+  "assessable": true,
+  "keywords": [
+   "file io",
+   "csv",
+   "json",
+   "encoding"
+  ]
+ },
+ {
+  "id": "prog.cli",
+  "name": "Command Line Basics",
+  "track": "foundations",
+  "description": "Navigating a shell, piping commands and managing files without a GUI.",
+  "prerequisites": [],
+  "difficulty": 1,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "shell",
+   "bash",
+   "paths",
+   "pipes",
+   "permissions"
+  ]
+ },
+ {
+  "id": "prog.git",
+  "name": "Version Control with Git",
+  "track": "foundations",
+  "description": "Commits, branches, merges and collaborating through a remote repository.",
+  "prerequisites": [
+   "prog.cli"
+  ],
+  "difficulty": 2,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "git",
+   "commit",
+   "branch",
+   "merge",
+   "pull request"
+  ]
+ },
+ {
+  "id": "prog.venv_packaging",
+  "name": "Environments and Packaging",
+  "track": "foundations",
+  "description": "Virtual environments, dependency pinning and importable project layout.",
+  "prerequisites": [
+   "prog.functions",
+   "prog.cli"
+  ],
+  "difficulty": 2,
+  "est_hours": 4,
+  "assessable": true,
+  "keywords": [
+   "virtualenv",
+   "pip",
+   "requirements",
+   "modules"
+  ]
+ },
+ {
+  "id": "prog.debugging",
+  "name": "Debugging and Error Handling",
+  "track": "foundations",
+  "description": "Reading tracebacks, using a debugger and raising exceptions deliberately.",
+  "prerequisites": [
+   "prog.functions"
+  ],
+  "difficulty": 2,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "exception",
+   "traceback",
+   "breakpoint",
+   "logging"
+  ]
+ },
+ {
+  "id": "prog.testing",
+  "name": "Automated Testing",
+  "track": "foundations",
+  "description": "Unit tests, fixtures and designing code that can be tested at all.",
+  "prerequisites": [
+   "prog.functions",
+   "prog.venv_packaging"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "pytest",
+   "unit test",
+   "fixture",
+   "assertion",
+   "coverage"
+  ]
+ },
+ {
+  "id": "prog.numpy",
+  "name": "NumPy and Vectorisation",
+  "track": "foundations",
+  "description": "Arrays, broadcasting and replacing Python loops with vector operations.",
+  "prerequisites": [
+   "prog.python_data_structures",
+   "math.linear_algebra"
+  ],
+  "difficulty": 2,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "numpy",
+   "array",
+   "broadcasting",
+   "vectorisation",
+   "dtype"
+  ]
+ },
+ {
+  "id": "prog.pandas",
+  "name": "Pandas DataFrames",
+  "track": "foundations",
+  "description": "Tabular data in memory: indexing, grouping, joining and reshaping.",
+  "prerequisites": [
+   "prog.numpy",
+   "prog.files_io"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "pandas",
+   "dataframe",
+   "groupby",
+   "merge",
+   "index"
+  ]
+ },
+ {
+  "id": "math.algebra",
+  "name": "Algebra and Notation",
+  "track": "foundations",
+  "description": "Symbol manipulation, equations, exponents and summation notation.",
+  "prerequisites": [],
+  "difficulty": 1,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "equation",
+   "exponent",
+   "summation",
+   "notation"
+  ]
+ },
+ {
+  "id": "math.functions_graphs",
+  "name": "Functions and Graphs",
+  "track": "foundations",
+  "description": "Functions as mappings, plus the graphs that make their behaviour visible.",
+  "prerequisites": [
+   "math.algebra"
+  ],
+  "difficulty": 2,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "function",
+   "domain",
+   "slope",
+   "logarithm",
+   "exponential"
+  ]
+ },
+ {
+  "id": "math.derivatives",
+  "name": "Derivatives",
+  "track": "foundations",
+  "description": "Rates of change, the chain rule and reading a gradient as a direction.",
+  "prerequisites": [
+   "math.functions_graphs"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "derivative",
+   "chain rule",
+   "gradient",
+   "partial derivative"
+  ]
+ },
+ {
+  "id": "math.integrals",
+  "name": "Integrals",
+  "track": "foundations",
+  "description": "Accumulation, area under a curve and integration as the inverse of differentiation.",
+  "prerequisites": [
+   "math.derivatives"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "integral",
+   "area under curve",
+   "antiderivative"
+  ]
+ },
+ {
+  "id": "math.linear_algebra",
+  "name": "Linear Algebra",
+  "track": "foundations",
+  "description": "Vectors, matrices, dot products and linear transformations.",
+  "prerequisites": [
+   "math.functions_graphs"
+  ],
+  "difficulty": 3,
+  "est_hours": 12,
+  "assessable": true,
+  "keywords": [
+   "vector",
+   "matrix",
+   "dot product",
+   "eigenvalue",
+   "transformation"
+  ]
+ },
+ {
+  "id": "math.probability",
+  "name": "Probability",
+  "track": "foundations",
+  "description": "Random variables, distributions, independence and conditional probability.",
+  "prerequisites": [
+   "math.algebra"
+  ],
+  "difficulty": 3,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "probability",
+   "distribution",
+   "bayes",
+   "expectation",
+   "independence"
+  ]
+ },
+ {
+  "id": "math.statistics",
+  "name": "Descriptive and Inferential Statistics",
+  "track": "foundations",
+  "description": "Summarising data and reasoning from a sample to a population.",
+  "prerequisites": [
+   "math.probability"
+  ],
+  "difficulty": 3,
+  "est_hours": 12,
+  "assessable": true,
+  "keywords": [
+   "mean",
+   "variance",
+   "sampling",
+   "confidence interval",
+   "correlation"
+  ]
+ },
+ {
+  "id": "math.hypothesis_testing",
+  "name": "Hypothesis Testing",
+  "track": "foundations",
+  "description": "Null hypotheses, p-values, statistical power and what significance does not mean.",
+  "prerequisites": [
+   "math.statistics"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "p-value",
+   "null hypothesis",
+   "t-test",
+   "statistical power"
+  ]
+ },
+ {
+  "id": "cs.data_structures",
+  "name": "Data Structures",
+  "track": "foundations",
+  "description": "Stacks, queues, trees, graphs and hash tables, and the cost of each.",
+  "prerequisites": [
+   "prog.python_data_structures"
+  ],
+  "difficulty": 3,
+  "est_hours": 12,
+  "assessable": true,
+  "keywords": [
+   "stack",
+   "queue",
+   "tree",
+   "graph",
+   "hash table"
+  ]
+ },
+ {
+  "id": "cs.complexity",
+  "name": "Complexity Analysis",
+  "track": "foundations",
+  "description": "Big-O reasoning about time and space before writing the code.",
+  "prerequisites": [
+   "cs.data_structures"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "big-o",
+   "time complexity",
+   "space complexity",
+   "asymptotic"
+  ]
+ },
+ {
+  "id": "cs.algorithms",
+  "name": "Algorithms",
+  "track": "foundations",
+  "description": "Sorting, searching, graph traversal, recursion and dynamic programming.",
+  "prerequisites": [
+   "cs.data_structures",
+   "cs.complexity"
+  ],
+  "difficulty": 4,
+  "est_hours": 14,
+  "assessable": true,
+  "keywords": [
+   "sorting",
+   "binary search",
+   "bfs",
+   "dfs",
+   "dynamic programming"
+  ]
+ },
+ {
+  "id": "cs.os_basics",
+  "name": "Operating System Concepts",
+  "track": "foundations",
+  "description": "Processes, memory, the filesystem and permissions from a user's perspective.",
+  "prerequisites": [
+   "prog.cli"
+  ],
+  "difficulty": 2,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "process",
+   "memory",
+   "filesystem",
+   "permissions",
+   "scheduling"
+  ]
+ },
+ {
+  "id": "cs.networking",
+  "name": "Computer Networking",
+  "track": "foundations",
+  "description": "Packets, IP, TCP, DNS and the layered model the internet actually runs on.",
+  "prerequisites": [
+   "cs.os_basics"
+  ],
+  "difficulty": 2,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "tcp/ip",
+   "dns",
+   "ports",
+   "osi model",
+   "routing"
+  ]
+ },
+ {
+  "id": "data.sql_basics",
+  "name": "SQL Fundamentals",
+  "track": "foundations",
+  "description": "SELECT, WHERE, ORDER BY and aggregation against a relational table.",
+  "prerequisites": [
+   "prog.cli"
+  ],
+  "difficulty": 2,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "sql",
+   "select",
+   "where",
+   "group by",
+   "aggregate"
+  ]
+ },
+ {
+  "id": "data.sql_joins",
+  "name": "Joins and Subqueries",
+  "track": "foundations",
+  "description": "Combining tables correctly, and why a careless join multiplies your rows.",
+  "prerequisites": [
+   "data.sql_basics"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "inner join",
+   "left join",
+   "subquery",
+   "cte"
+  ]
+ },
+ {
+  "id": "data.database_design",
+  "name": "Relational Design",
+  "track": "foundations",
+  "description": "Keys, normalisation, indexes and transactions.",
+  "prerequisites": [
+   "data.sql_joins",
+   "cs.data_structures"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "normalisation",
+   "primary key",
+   "index",
+   "transaction",
+   "acid"
+  ]
+ },
+ {
+  "id": "web.html",
+  "name": "HTML and Document Structure",
+  "track": "web-development",
+  "description": "Semantic markup and the document tree a browser actually renders.",
+  "prerequisites": [],
+  "difficulty": 1,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "html",
+   "semantic markup",
+   "dom tree",
+   "forms"
+  ]
+ },
+ {
+  "id": "web.css",
+  "name": "CSS and Layout",
+  "track": "web-development",
+  "description": "Selectors, the box model, flexbox and grid.",
+  "prerequisites": [
+   "web.html"
+  ],
+  "difficulty": 2,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "css",
+   "flexbox",
+   "grid",
+   "box model",
+   "specificity"
+  ]
+ },
+ {
+  "id": "web.responsive",
+  "name": "Responsive Design",
+  "track": "web-development",
+  "description": "Media queries and fluid layouts that survive a 390px screen.",
+  "prerequisites": [
+   "web.css"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "media query",
+   "mobile first",
+   "viewport",
+   "breakpoint"
+  ]
+ },
+ {
+  "id": "web.css_frameworks",
+  "name": "Utility CSS Frameworks",
+  "track": "web-development",
+  "description": "Building consistent interfaces with a utility-class framework.",
+  "prerequisites": [
+   "web.responsive"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "tailwind",
+   "utility classes",
+   "design tokens"
+  ]
+ },
+ {
+  "id": "web.accessibility",
+  "name": "Web Accessibility",
+  "track": "web-development",
+  "description": "Semantics, keyboard navigation, contrast and ARIA where markup falls short.",
+  "prerequisites": [
+   "web.html",
+   "web.css"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "a11y",
+   "aria",
+   "keyboard navigation",
+   "contrast",
+   "screen reader"
+  ]
+ },
+ {
+  "id": "web.http",
+  "name": "HTTP and the Request Cycle",
+  "track": "web-development",
+  "description": "Methods, status codes, headers, cookies and caching.",
+  "prerequisites": [
+   "cs.networking"
+  ],
+  "difficulty": 2,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "http",
+   "status code",
+   "headers",
+   "cookies",
+   "caching"
+  ]
+ },
+ {
+  "id": "web.javascript",
+  "name": "JavaScript Fundamentals",
+  "track": "web-development",
+  "description": "Types, functions, closures and the quirks that trip up newcomers.",
+  "prerequisites": [
+   "web.html"
+  ],
+  "difficulty": 2,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "javascript",
+   "closure",
+   "prototype",
+   "coercion",
+   "scope"
+  ]
+ },
+ {
+  "id": "web.dom",
+  "name": "DOM Manipulation and Events",
+  "track": "web-development",
+  "description": "Selecting nodes, handling events and understanding event bubbling.",
+  "prerequisites": [
+   "web.javascript"
+  ],
+  "difficulty": 2,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "dom",
+   "event listener",
+   "bubbling",
+   "query selector"
+  ]
+ },
+ {
+  "id": "web.js_async",
+  "name": "Asynchronous JavaScript",
+  "track": "web-development",
+  "description": "The event loop, callbacks, promises and async/await.",
+  "prerequisites": [
+   "web.javascript"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "promise",
+   "async await",
+   "event loop",
+   "callback"
+  ]
+ },
+ {
+  "id": "web.fetch",
+  "name": "Calling APIs from the Browser",
+  "track": "web-development",
+  "description": "fetch, JSON payloads, error handling and CORS.",
+  "prerequisites": [
+   "web.js_async",
+   "web.http"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "fetch",
+   "rest",
+   "cors",
+   "json"
+  ]
+ },
+ {
+  "id": "web.modules",
+  "name": "Modules and Bundling",
+  "track": "web-development",
+  "description": "ES modules, import graphs and what a bundler is for.",
+  "prerequisites": [
+   "web.javascript"
+  ],
+  "difficulty": 3,
+  "est_hours": 4,
+  "assessable": true,
+  "keywords": [
+   "es modules",
+   "import",
+   "bundler",
+   "vite"
+  ]
+ },
+ {
+  "id": "web.npm",
+  "name": "Package Management and Tooling",
+  "track": "web-development",
+  "description": "npm, semantic versioning, lockfiles and project scripts.",
+  "prerequisites": [
+   "web.modules",
+   "prog.cli"
+  ],
+  "difficulty": 2,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "npm",
+   "package.json",
+   "semver",
+   "lockfile"
+  ]
+ },
+ {
+  "id": "web.typescript",
+  "name": "TypeScript",
+  "track": "web-development",
+  "description": "Static types over JavaScript: interfaces, generics and narrowing.",
+  "prerequisites": [
+   "web.javascript",
+   "web.modules"
+  ],
+  "difficulty": 3,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "typescript",
+   "interface",
+   "generic",
+   "type narrowing"
+  ]
+ },
+ {
+  "id": "web.react",
+  "name": "React Components",
+  "track": "web-development",
+  "description": "Components, JSX, props and the rendering model.",
+  "prerequisites": [
+   "web.dom",
+   "web.modules",
+   "web.npm"
+  ],
+  "difficulty": 3,
+  "est_hours": 12,
+  "assessable": true,
+  "keywords": [
+   "react",
+   "jsx",
+   "component",
+   "props",
+   "rendering"
+  ]
+ },
+ {
+  "id": "web.react_state",
+  "name": "React State and Effects",
+  "track": "web-development",
+  "description": "useState, useEffect, and the difference between state and derived value.",
+  "prerequisites": [
+   "web.react"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "usestate",
+   "useeffect",
+   "lifting state",
+   "re-render"
+  ]
+ },
+ {
+  "id": "web.react_hooks",
+  "name": "Custom Hooks and Composition",
+  "track": "web-development",
+  "description": "Extracting reusable stateful logic without a class in sight.",
+  "prerequisites": [
+   "web.react_state"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "custom hook",
+   "usememo",
+   "usecallback",
+   "composition"
+  ]
+ },
+ {
+  "id": "web.react_routing",
+  "name": "Client-Side Routing",
+  "track": "web-development",
+  "description": "Routes, params and navigation in a single-page application.",
+  "prerequisites": [
+   "web.react"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "react router",
+   "spa",
+   "route params",
+   "navigation"
+  ]
+ },
+ {
+  "id": "web.state_management",
+  "name": "Application State Management",
+  "track": "web-development",
+  "description": "Global stores, server-state caching and choosing between them.",
+  "prerequisites": [
+   "web.react_hooks"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "zustand",
+   "redux",
+   "react query",
+   "cache",
+   "global state"
+  ]
+ },
+ {
+  "id": "web.testing_frontend",
+  "name": "Testing User Interfaces",
+  "track": "web-development",
+  "description": "Component tests, user-centric queries and avoiding brittle assertions.",
+  "prerequisites": [
+   "web.react_hooks",
+   "prog.testing"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "vitest",
+   "testing library",
+   "component test",
+   "mocking"
+  ]
+ },
+ {
+  "id": "web.performance",
+  "name": "Frontend Performance",
+  "track": "web-development",
+  "description": "Bundle size, rendering cost, lazy loading and measuring before optimising.",
+  "prerequisites": [
+   "web.react_hooks",
+   "web.http"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "lighthouse",
+   "code splitting",
+   "lazy loading",
+   "memoisation"
+  ]
+ },
+ {
+  "id": "web.rest_api_design",
+  "name": "REST API Design",
+  "track": "web-development",
+  "description": "Resources, verbs, status codes, pagination and versioning.",
+  "prerequisites": [
+   "web.http",
+   "data.sql_basics"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "rest",
+   "endpoint",
+   "pagination",
+   "api versioning",
+   "openapi"
+  ]
+ },
+ {
+  "id": "web.node_backend",
+  "name": "Server-Side JavaScript",
+  "track": "web-development",
+  "description": "Running JavaScript outside the browser: modules, streams and the runtime.",
+  "prerequisites": [
+   "web.js_async",
+   "web.npm"
+  ],
+  "difficulty": 3,
+  "est_hours": 12,
+  "assessable": true,
+  "keywords": [
+   "node.js",
+   "runtime",
+   "streams",
+   "environment variables"
+  ]
+ },
+ {
+  "id": "web.express_api",
+  "name": "Building an HTTP API",
+  "track": "web-development",
+  "description": "Routing, middleware, validation and error handling on the server.",
+  "prerequisites": [
+   "web.node_backend",
+   "web.rest_api_design"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "express",
+   "middleware",
+   "routing",
+   "validation"
+  ]
+ },
+ {
+  "id": "web.orm_persistence",
+  "name": "Persistence and ORMs",
+  "track": "web-development",
+  "description": "Mapping objects to tables, migrations and the N+1 query problem.",
+  "prerequisites": [
+   "web.express_api",
+   "data.database_design"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "orm",
+   "migration",
+   "n+1",
+   "connection pool"
+  ]
+ },
+ {
+  "id": "web.auth_sessions",
+  "name": "Authentication and Sessions",
+  "track": "web-development",
+  "description": "Password storage, sessions, tokens and the cookie flags that matter.",
+  "prerequisites": [
+   "web.express_api",
+   "web.http"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "session",
+   "jwt",
+   "oauth",
+   "password hashing",
+   "httponly"
+  ]
+ },
+ {
+  "id": "web.deployment",
+  "name": "Deploying a Web Application",
+  "track": "web-development",
+  "description": "Build output, environment configuration, static hosting and reverse proxies.",
+  "prerequisites": [
+   "web.express_api",
+   "web.react_routing",
+   "cloud.docker"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "deployment",
+   "build",
+   "environment variables",
+   "reverse proxy",
+   "cdn"
+  ]
+ },
+ {
+  "id": "web.fullstack_engineer",
+  "name": "Full-Stack Web Engineer",
+  "track": "web-development",
+  "description": "Ship and operate a complete, tested, authenticated web application.",
+  "prerequisites": [
+   "web.deployment",
+   "web.auth_sessions",
+   "web.orm_persistence",
+   "web.testing_frontend",
+   "web.typescript"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": false,
+  "keywords": [
+   "full stack",
+   "web engineer",
+   "end to end",
+   "production"
+  ]
+ },
+ {
+  "id": "ml.foundations",
+  "name": "What Machine Learning Is",
+  "track": "machine-learning",
+  "description": "Supervised, unsupervised and reinforcement learning, and when not to use ML.",
+  "prerequisites": [
+   "prog.python_basics"
+  ],
+  "difficulty": 2,
+  "est_hours": 4,
+  "assessable": true,
+  "keywords": [
+   "supervised",
+   "unsupervised",
+   "labels",
+   "generalisation"
+  ]
+ },
+ {
+  "id": "ml.train_test_split",
+  "name": "Training, Validation and Test Sets",
+  "track": "machine-learning",
+  "description": "Holding data back so that a score means something.",
+  "prerequisites": [
+   "ml.foundations",
+   "math.probability"
+  ],
+  "difficulty": 2,
+  "est_hours": 3,
+  "assessable": true,
+  "keywords": [
+   "train test split",
+   "holdout",
+   "data leakage",
+   "overfitting"
+  ]
+ },
+ {
+  "id": "ml.data_preprocessing",
+  "name": "Data Preprocessing",
+  "track": "machine-learning",
+  "description": "Missing values, encoding, scaling and the leakage traps in each.",
+  "prerequisites": [
+   "prog.pandas",
+   "ml.foundations"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "imputation",
+   "one-hot",
+   "scaling",
+   "normalisation"
+  ]
+ },
+ {
+  "id": "ml.feature_engineering",
+  "name": "Feature Engineering",
+  "track": "machine-learning",
+  "description": "Constructing and selecting features that carry signal.",
+  "prerequisites": [
+   "ml.data_preprocessing",
+   "math.statistics"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "feature selection",
+   "binning",
+   "interaction",
+   "target encoding"
+  ]
+ },
+ {
+  "id": "ml.linear_regression",
+  "name": "Linear Regression",
+  "track": "machine-learning",
+  "description": "Fitting a line, interpreting coefficients and checking assumptions.",
+  "prerequisites": [
+   "math.linear_algebra",
+   "ml.train_test_split",
+   "math.statistics"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "regression",
+   "least squares",
+   "coefficient",
+   "residual"
+  ]
+ },
+ {
+  "id": "ml.cost_functions",
+  "name": "Loss and Cost Functions",
+  "track": "machine-learning",
+  "description": "Turning a wrong prediction into a differentiable number a model can minimise.",
+  "prerequisites": [
+   "ml.linear_regression",
+   "math.derivatives"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "mse",
+   "cross entropy",
+   "loss surface",
+   "objective"
+  ]
+ },
+ {
+  "id": "ml.gradient_descent",
+  "name": "Gradient Descent",
+  "track": "machine-learning",
+  "description": "Following the gradient downhill, and what the learning rate controls.",
+  "prerequisites": [
+   "ml.cost_functions",
+   "prog.numpy"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "gradient descent",
+   "learning rate",
+   "convergence",
+   "batch size"
+  ]
+ },
+ {
+  "id": "ml.logistic_regression",
+  "name": "Logistic Regression",
+  "track": "machine-learning",
+  "description": "Classification with a linear boundary and a probabilistic output.",
+  "prerequisites": [
+   "ml.linear_regression"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "classification",
+   "sigmoid",
+   "decision boundary",
+   "odds"
+  ]
+ },
+ {
+  "id": "ml.evaluation_metrics",
+  "name": "Evaluation Metrics",
+  "track": "machine-learning",
+  "description": "Accuracy, precision, recall, F1, ROC-AUC and why accuracy misleads.",
+  "prerequisites": [
+   "ml.logistic_regression",
+   "math.statistics"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "precision",
+   "recall",
+   "f1",
+   "roc auc",
+   "confusion matrix"
+  ]
+ },
+ {
+  "id": "ml.cross_validation",
+  "name": "Cross-Validation",
+  "track": "machine-learning",
+  "description": "K-fold and stratified validation for a stable estimate of performance.",
+  "prerequisites": [
+   "ml.evaluation_metrics",
+   "ml.train_test_split"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "k-fold",
+   "stratified",
+   "validation curve",
+   "variance"
+  ]
+ },
+ {
+  "id": "ml.regularization",
+  "name": "Regularisation",
+  "track": "machine-learning",
+  "description": "L1, L2 and the bias-variance trade-off they buy you.",
+  "prerequisites": [
+   "ml.logistic_regression",
+   "ml.cost_functions"
+  ],
+  "difficulty": 4,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "l1",
+   "l2",
+   "ridge",
+   "lasso",
+   "bias variance"
+  ]
+ },
+ {
+  "id": "ml.knn",
+  "name": "K-Nearest Neighbours",
+  "track": "machine-learning",
+  "description": "Instance-based prediction and the curse of dimensionality.",
+  "prerequisites": [
+   "ml.train_test_split"
+  ],
+  "difficulty": 2,
+  "est_hours": 4,
+  "assessable": true,
+  "keywords": [
+   "knn",
+   "distance metric",
+   "lazy learning"
+  ]
+ },
+ {
+  "id": "ml.naive_bayes",
+  "name": "Naive Bayes",
+  "track": "machine-learning",
+  "description": "Applying Bayes' rule with a strong independence assumption.",
+  "prerequisites": [
+   "math.probability",
+   "ml.evaluation_metrics"
+  ],
+  "difficulty": 3,
+  "est_hours": 4,
+  "assessable": true,
+  "keywords": [
+   "bayes",
+   "conditional independence",
+   "text classification"
+  ]
+ },
+ {
+  "id": "ml.decision_trees",
+  "name": "Decision Trees",
+  "track": "machine-learning",
+  "description": "Recursive splitting, impurity measures and why trees overfit.",
+  "prerequisites": [
+   "ml.evaluation_metrics"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "gini",
+   "entropy",
+   "pruning",
+   "split"
+  ]
+ },
+ {
+  "id": "ml.ensembles",
+  "name": "Ensembles and Boosting",
+  "track": "machine-learning",
+  "description": "Bagging, random forests and gradient boosting.",
+  "prerequisites": [
+   "ml.decision_trees"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "random forest",
+   "bagging",
+   "xgboost",
+   "boosting"
+  ]
+ },
+ {
+  "id": "ml.svm",
+  "name": "Support Vector Machines",
+  "track": "machine-learning",
+  "description": "Maximum-margin classifiers and the kernel trick.",
+  "prerequisites": [
+   "ml.logistic_regression",
+   "math.linear_algebra"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "svm",
+   "margin",
+   "kernel",
+   "hinge loss"
+  ]
+ },
+ {
+  "id": "ml.clustering",
+  "name": "Clustering",
+  "track": "machine-learning",
+  "description": "K-means, hierarchical clustering and evaluating a partition without labels.",
+  "prerequisites": [
+   "prog.numpy",
+   "ml.foundations"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "k-means",
+   "silhouette",
+   "hierarchical",
+   "unsupervised"
+  ]
+ },
+ {
+  "id": "ml.dimensionality_reduction",
+  "name": "Dimensionality Reduction",
+  "track": "machine-learning",
+  "description": "PCA and manifold methods for compressing and visualising features.",
+  "prerequisites": [
+   "math.linear_algebra",
+   "ml.clustering"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "pca",
+   "eigenvector",
+   "t-sne",
+   "variance explained"
+  ]
+ },
+ {
+  "id": "ml.pipelines",
+  "name": "Reproducible ML Pipelines",
+  "track": "machine-learning",
+  "description": "Composing preprocessing and estimation so transforms never leak.",
+  "prerequisites": [
+   "ml.feature_engineering",
+   "ml.cross_validation"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "scikit-learn",
+   "pipeline",
+   "transformer",
+   "reproducibility"
+  ]
+ },
+ {
+  "id": "ml.hyperparameter_tuning",
+  "name": "Hyperparameter Tuning",
+  "track": "machine-learning",
+  "description": "Grid, random and Bayesian search under a fixed validation protocol.",
+  "prerequisites": [
+   "ml.pipelines",
+   "ml.cross_validation"
+  ],
+  "difficulty": 4,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "grid search",
+   "random search",
+   "optuna",
+   "search space"
+  ]
+ },
+ {
+  "id": "ml.neural_nets",
+  "name": "Neural Networks",
+  "track": "machine-learning",
+  "description": "Layers, activations and why depth buys representational power.",
+  "prerequisites": [
+   "ml.gradient_descent",
+   "ml.regularization"
+  ],
+  "difficulty": 4,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "perceptron",
+   "activation",
+   "hidden layer",
+   "relu"
+  ]
+ },
+ {
+  "id": "ml.backpropagation",
+  "name": "Backpropagation",
+  "track": "machine-learning",
+  "description": "The chain rule applied across a computation graph.",
+  "prerequisites": [
+   "ml.neural_nets",
+   "math.derivatives"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "backprop",
+   "chain rule",
+   "computation graph",
+   "autodiff"
+  ]
+ },
+ {
+  "id": "ml.optimizers",
+  "name": "Optimisers and Training Dynamics",
+  "track": "machine-learning",
+  "description": "Momentum, Adam, schedules and diagnosing a training curve.",
+  "prerequisites": [
+   "ml.backpropagation"
+  ],
+  "difficulty": 4,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "adam",
+   "momentum",
+   "learning rate schedule",
+   "vanishing gradient"
+  ]
+ },
+ {
+  "id": "ml.frameworks",
+  "name": "Deep Learning Frameworks",
+  "track": "machine-learning",
+  "description": "Tensors, autograd, modules and the training loop in a real framework.",
+  "prerequisites": [
+   "ml.backpropagation",
+   "prog.python_oop"
+  ],
+  "difficulty": 4,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "pytorch",
+   "tensorflow",
+   "tensor",
+   "autograd",
+   "training loop"
+  ]
+ },
+ {
+  "id": "ml.cnn",
+  "name": "Convolutional Networks",
+  "track": "machine-learning",
+  "description": "Convolutions, pooling and transfer learning for images.",
+  "prerequisites": [
+   "ml.frameworks"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "cnn",
+   "convolution",
+   "pooling",
+   "transfer learning"
+  ]
+ },
+ {
+  "id": "ml.nlp_basics",
+  "name": "Natural Language Processing",
+  "track": "machine-learning",
+  "description": "Tokenisation, embeddings and classic text representations.",
+  "prerequisites": [
+   "ml.feature_engineering",
+   "ml.naive_bayes"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "tokenisation",
+   "tf-idf",
+   "word embedding",
+   "text classification"
+  ]
+ },
+ {
+  "id": "ml.sequence_models",
+  "name": "Sequence Models",
+  "track": "machine-learning",
+  "description": "RNNs, LSTMs and the limits that motivated attention.",
+  "prerequisites": [
+   "ml.frameworks",
+   "ml.nlp_basics"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "rnn",
+   "lstm",
+   "sequence",
+   "hidden state"
+  ]
+ },
+ {
+  "id": "ml.transformers",
+  "name": "Attention and Transformers",
+  "track": "machine-learning",
+  "description": "Self-attention, positional encoding and the transformer block.",
+  "prerequisites": [
+   "ml.sequence_models",
+   "ml.optimizers"
+  ],
+  "difficulty": 5,
+  "est_hours": 12,
+  "assessable": true,
+  "keywords": [
+   "attention",
+   "transformer",
+   "positional encoding",
+   "bert"
+  ]
+ },
+ {
+  "id": "ml.llm_applications",
+  "name": "Building with Language Models",
+  "track": "machine-learning",
+  "description": "Prompting, retrieval augmentation, evaluation and grounding.",
+  "prerequisites": [
+   "ml.transformers",
+   "web.rest_api_design"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "llm",
+   "prompting",
+   "rag",
+   "embeddings",
+   "grounding"
+  ]
+ },
+ {
+  "id": "ml.model_deployment",
+  "name": "Serving Models",
+  "track": "machine-learning",
+  "description": "Packaging a model behind an API with versioning and latency budgets.",
+  "prerequisites": [
+   "ml.pipelines",
+   "web.rest_api_design",
+   "cloud.docker"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "inference",
+   "serving",
+   "api",
+   "latency",
+   "model registry"
+  ]
+ },
+ {
+  "id": "ml.mlops",
+  "name": "MLOps and Monitoring",
+  "track": "machine-learning",
+  "description": "Retraining, drift detection and treating models as operated software.",
+  "prerequisites": [
+   "ml.model_deployment",
+   "cloud.ci_cd"
+  ],
+  "difficulty": 5,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "drift",
+   "monitoring",
+   "retraining",
+   "experiment tracking"
+  ]
+ },
+ {
+  "id": "ml.engineer",
+  "name": "Machine Learning Engineer",
+  "track": "machine-learning",
+  "description": "Take a problem from raw data to a monitored model in production.",
+  "prerequisites": [
+   "ml.mlops",
+   "ml.ensembles",
+   "ml.frameworks",
+   "ml.hyperparameter_tuning"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": false,
+  "keywords": [
+   "ml engineer",
+   "production ml",
+   "end to end"
+  ]
+ },
+ {
+  "id": "da.spreadsheets",
+  "name": "Spreadsheet Analysis",
+  "track": "data-analytics",
+  "description": "Formulas, pivot tables and the analysis most organisations actually run on.",
+  "prerequisites": [],
+  "difficulty": 1,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "excel",
+   "pivot table",
+   "formula",
+   "lookup"
+  ]
+ },
+ {
+  "id": "da.fundamentals",
+  "name": "Analytics Fundamentals",
+  "track": "data-analytics",
+  "description": "Populations, samples, distributions and the questions data can answer.",
+  "prerequisites": [
+   "math.statistics"
+  ],
+  "difficulty": 2,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "descriptive statistics",
+   "sampling",
+   "distribution",
+   "outlier"
+  ]
+ },
+ {
+  "id": "da.data_cleaning",
+  "name": "Data Cleaning",
+  "track": "data-analytics",
+  "description": "Missing values, duplicates, type coercion and documenting what you changed.",
+  "prerequisites": [
+   "prog.pandas"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "missing data",
+   "deduplication",
+   "data quality",
+   "type casting"
+  ]
+ },
+ {
+  "id": "da.exploratory_analysis",
+  "name": "Exploratory Data Analysis",
+  "track": "data-analytics",
+  "description": "Systematically interrogating a dataset before modelling anything.",
+  "prerequisites": [
+   "da.data_cleaning",
+   "da.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "eda",
+   "distribution",
+   "correlation",
+   "summary statistics"
+  ]
+ },
+ {
+  "id": "da.visualization",
+  "name": "Data Visualisation",
+  "track": "data-analytics",
+  "description": "Choosing an encoding that makes the finding obvious rather than decorative.",
+  "prerequisites": [
+   "da.exploratory_analysis"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "matplotlib",
+   "chart type",
+   "encoding",
+   "axis",
+   "colour scale"
+  ]
+ },
+ {
+  "id": "da.storytelling",
+  "name": "Communicating Findings",
+  "track": "data-analytics",
+  "description": "Structuring an analysis so a decision-maker can act on it.",
+  "prerequisites": [
+   "da.visualization"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "narrative",
+   "executive summary",
+   "annotation",
+   "audience"
+  ]
+ },
+ {
+  "id": "da.sql_analytics",
+  "name": "Analytical SQL",
+  "track": "data-analytics",
+  "description": "Aggregations, CTEs and query patterns for answering business questions.",
+  "prerequisites": [
+   "data.sql_joins"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "cte",
+   "aggregation",
+   "case when",
+   "query optimisation"
+  ]
+ },
+ {
+  "id": "da.window_functions",
+  "name": "Window Functions",
+  "track": "data-analytics",
+  "description": "Running totals, rankings and period-over-period comparisons in SQL.",
+  "prerequisites": [
+   "da.sql_analytics"
+  ],
+  "difficulty": 4,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "window function",
+   "partition by",
+   "rank",
+   "lag"
+  ]
+ },
+ {
+  "id": "da.business_metrics",
+  "name": "Business Metrics",
+  "track": "data-analytics",
+  "description": "Retention, conversion, cohorts and defining a metric that cannot be gamed.",
+  "prerequisites": [
+   "da.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "kpi",
+   "cohort",
+   "retention",
+   "conversion",
+   "north star"
+  ]
+ },
+ {
+  "id": "da.dashboards",
+  "name": "Dashboards and BI",
+  "track": "data-analytics",
+  "description": "Building a dashboard people return to, and knowing when not to build one.",
+  "prerequisites": [
+   "da.visualization",
+   "da.sql_analytics"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "bi tool",
+   "dashboard",
+   "self-serve",
+   "drill down"
+  ]
+ },
+ {
+  "id": "da.experiment_design",
+  "name": "Experiment Design",
+  "track": "data-analytics",
+  "description": "Randomisation, sample size and controlling what you are not testing.",
+  "prerequisites": [
+   "math.hypothesis_testing",
+   "da.fundamentals"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "randomisation",
+   "sample size",
+   "control group",
+   "bias"
+  ]
+ },
+ {
+  "id": "da.ab_testing",
+  "name": "A/B Testing",
+  "track": "data-analytics",
+  "description": "Running and reading an online experiment, including peeking and novelty effects.",
+  "prerequisites": [
+   "da.experiment_design",
+   "da.business_metrics"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "a/b test",
+   "significance",
+   "lift",
+   "peeking"
+  ]
+ },
+ {
+  "id": "da.regression_analysis",
+  "name": "Regression for Analysts",
+  "track": "data-analytics",
+  "description": "Explanatory modelling, confounders and why correlation is not causation.",
+  "prerequisites": [
+   "math.statistics",
+   "da.exploratory_analysis"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "ols",
+   "confounder",
+   "interpretation",
+   "causal inference"
+  ]
+ },
+ {
+  "id": "da.time_series",
+  "name": "Time Series Analysis",
+  "track": "data-analytics",
+  "description": "Trend, seasonality, stationarity and autocorrelation.",
+  "prerequisites": [
+   "da.regression_analysis"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "seasonality",
+   "trend",
+   "stationarity",
+   "autocorrelation"
+  ]
+ },
+ {
+  "id": "da.forecasting",
+  "name": "Forecasting",
+  "track": "data-analytics",
+  "description": "Baselines, ARIMA-style models and honest backtesting.",
+  "prerequisites": [
+   "da.time_series"
+  ],
+  "difficulty": 5,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "forecast",
+   "arima",
+   "backtesting",
+   "baseline"
+  ]
+ },
+ {
+  "id": "da.etl",
+  "name": "ETL and Data Pipelines",
+  "track": "data-analytics",
+  "description": "Scheduled extract-transform-load jobs that fail loudly rather than silently.",
+  "prerequisites": [
+   "da.data_cleaning",
+   "prog.venv_packaging"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "etl",
+   "pipeline",
+   "scheduling",
+   "idempotency",
+   "airflow"
+  ]
+ },
+ {
+  "id": "da.warehousing",
+  "name": "Data Warehousing",
+  "track": "data-analytics",
+  "description": "Dimensional modelling, fact and dimension tables, and slowly changing data.",
+  "prerequisites": [
+   "da.etl",
+   "data.database_design"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "star schema",
+   "fact table",
+   "dimension",
+   "olap"
+  ]
+ },
+ {
+  "id": "da.analyst",
+  "name": "Data Analyst",
+  "track": "data-analytics",
+  "description": "Own a question end to end: pull the data, analyse it, and drive a decision.",
+  "prerequisites": [
+   "da.dashboards",
+   "da.storytelling",
+   "da.ab_testing",
+   "da.window_functions"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": false,
+  "keywords": [
+   "data analyst",
+   "insight",
+   "reporting"
+  ]
+ },
+ {
+  "id": "da.data_engineer",
+  "name": "Data Engineer",
+  "track": "data-analytics",
+  "description": "Build and operate the pipelines and warehouse everyone else queries.",
+  "prerequisites": [
+   "da.warehousing",
+   "cloud.docker",
+   "cloud.ci_cd"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": false,
+  "keywords": [
+   "data engineer",
+   "pipeline",
+   "warehouse",
+   "orchestration"
+  ]
+ },
+ {
+  "id": "sec.fundamentals",
+  "name": "Security Fundamentals",
+  "track": "cybersecurity",
+  "description": "Confidentiality, integrity, availability, and thinking in terms of assets.",
+  "prerequisites": [
+   "cs.networking"
+  ],
+  "difficulty": 2,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "cia triad",
+   "risk",
+   "attack surface",
+   "defence in depth"
+  ]
+ },
+ {
+  "id": "sec.threat_modeling",
+  "name": "Threat Modelling",
+  "track": "cybersecurity",
+  "description": "Enumerating adversaries, assets and abuse cases before writing controls.",
+  "prerequisites": [
+   "sec.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "stride",
+   "threat model",
+   "adversary",
+   "abuse case"
+  ]
+ },
+ {
+  "id": "sec.cryptography",
+  "name": "Cryptography Basics",
+  "track": "cybersecurity",
+  "description": "Symmetric and asymmetric encryption, and what each one does not protect.",
+  "prerequisites": [
+   "math.algebra",
+   "sec.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "aes",
+   "rsa",
+   "key exchange",
+   "cipher",
+   "entropy"
+  ]
+ },
+ {
+  "id": "sec.hashing_pki",
+  "name": "Hashing, Signatures and PKI",
+  "track": "cybersecurity",
+  "description": "Hash functions, digital signatures, certificates and chains of trust.",
+  "prerequisites": [
+   "sec.cryptography"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "sha-256",
+   "signature",
+   "certificate",
+   "pki",
+   "salt"
+  ]
+ },
+ {
+  "id": "sec.tls",
+  "name": "TLS and Transport Security",
+  "track": "cybersecurity",
+  "description": "The handshake, certificate validation and common misconfigurations.",
+  "prerequisites": [
+   "sec.hashing_pki",
+   "web.http"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "tls",
+   "handshake",
+   "certificate pinning",
+   "https"
+  ]
+ },
+ {
+  "id": "sec.linux_hardening",
+  "name": "System Hardening",
+  "track": "cybersecurity",
+  "description": "Least privilege, patching, service reduction and audit logging.",
+  "prerequisites": [
+   "cs.os_basics",
+   "sec.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "least privilege",
+   "hardening",
+   "patching",
+   "auditd",
+   "sudo"
+  ]
+ },
+ {
+  "id": "sec.network_security",
+  "name": "Network Security",
+  "track": "cybersecurity",
+  "description": "Segmentation, traffic analysis and attacks that live at the network layer.",
+  "prerequisites": [
+   "cs.networking",
+   "sec.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "segmentation",
+   "packet capture",
+   "mitm",
+   "vpn",
+   "arp spoofing"
+  ]
+ },
+ {
+  "id": "sec.firewalls_ids",
+  "name": "Firewalls and Intrusion Detection",
+  "track": "cybersecurity",
+  "description": "Rule design, IDS/IPS placement and tuning out the noise.",
+  "prerequisites": [
+   "sec.network_security"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "firewall",
+   "ids",
+   "ips",
+   "signature",
+   "false positive"
+  ]
+ },
+ {
+  "id": "sec.web_vulnerabilities",
+  "name": "Web Application Vulnerabilities",
+  "track": "cybersecurity",
+  "description": "The OWASP Top Ten and the pattern common to most of it: trusting input.",
+  "prerequisites": [
+   "web.http",
+   "sec.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "owasp",
+   "injection",
+   "broken access control",
+   "input validation"
+  ]
+ },
+ {
+  "id": "sec.xss_csrf",
+  "name": "XSS and CSRF",
+  "track": "cybersecurity",
+  "description": "Cross-site scripting and request forgery, and the headers that stop them.",
+  "prerequisites": [
+   "sec.web_vulnerabilities",
+   "web.javascript"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "xss",
+   "csrf",
+   "csp",
+   "samesite",
+   "output encoding"
+  ]
+ },
+ {
+  "id": "sec.sql_injection",
+  "name": "Injection Attacks",
+  "track": "cybersecurity",
+  "description": "SQL and command injection, and why parameterisation is the only real fix.",
+  "prerequisites": [
+   "sec.web_vulnerabilities",
+   "data.sql_basics"
+  ],
+  "difficulty": 4,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "sql injection",
+   "parameterised query",
+   "command injection"
+  ]
+ },
+ {
+  "id": "sec.auth_security",
+  "name": "Authentication and Access Control",
+  "track": "cybersecurity",
+  "description": "Credential storage, MFA, session handling and authorisation models.",
+  "prerequisites": [
+   "sec.hashing_pki",
+   "sec.web_vulnerabilities"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "mfa",
+   "rbac",
+   "session fixation",
+   "password hashing",
+   "oauth"
+  ]
+ },
+ {
+  "id": "sec.secure_coding",
+  "name": "Secure Coding",
+  "track": "cybersecurity",
+  "description": "Input validation, safe defaults and catching classes of bug in review.",
+  "prerequisites": [
+   "sec.web_vulnerabilities",
+   "prog.testing"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "input validation",
+   "sast",
+   "code review",
+   "safe defaults"
+  ]
+ },
+ {
+  "id": "sec.pentest_methodology",
+  "name": "Penetration Testing Methodology",
+  "track": "cybersecurity",
+  "description": "Scoping, rules of engagement, phases and reporting.",
+  "prerequisites": [
+   "sec.network_security",
+   "sec.web_vulnerabilities",
+   "sec.threat_modeling"
+  ],
+  "difficulty": 4,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "scope",
+   "rules of engagement",
+   "methodology",
+   "reporting"
+  ]
+ },
+ {
+  "id": "sec.recon",
+  "name": "Reconnaissance and Scanning",
+  "track": "cybersecurity",
+  "description": "Passive and active discovery, service enumeration and attack-surface mapping.",
+  "prerequisites": [
+   "sec.pentest_methodology"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "osint",
+   "nmap",
+   "enumeration",
+   "fingerprinting"
+  ]
+ },
+ {
+  "id": "sec.exploitation",
+  "name": "Exploitation Fundamentals",
+  "track": "cybersecurity",
+  "description": "Turning a finding into proven impact in an authorised engagement.",
+  "prerequisites": [
+   "sec.recon",
+   "sec.linux_hardening",
+   "cs.data_structures"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "exploit",
+   "privilege escalation",
+   "payload",
+   "post-exploitation"
+  ]
+ },
+ {
+  "id": "sec.incident_response",
+  "name": "Incident Response",
+  "track": "cybersecurity",
+  "description": "Detection, containment, eradication, recovery and the timeline you must keep.",
+  "prerequisites": [
+   "sec.network_security",
+   "sec.linux_hardening"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "ir",
+   "containment",
+   "playbook",
+   "chain of custody"
+  ]
+ },
+ {
+  "id": "sec.siem",
+  "name": "SIEM and Detection Engineering",
+  "track": "cybersecurity",
+  "description": "Log pipelines, detection rules and alert triage that a human can sustain.",
+  "prerequisites": [
+   "sec.incident_response"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "siem",
+   "log",
+   "detection rule",
+   "triage",
+   "correlation"
+  ]
+ },
+ {
+  "id": "sec.forensics",
+  "name": "Digital Forensics",
+  "track": "cybersecurity",
+  "description": "Disk and memory artefacts, timelines and preserving evidence.",
+  "prerequisites": [
+   "sec.incident_response"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "forensics",
+   "memory dump",
+   "timeline",
+   "artefact",
+   "imaging"
+  ]
+ },
+ {
+  "id": "sec.malware_analysis",
+  "name": "Malware Analysis Basics",
+  "track": "cybersecurity",
+  "description": "Static and dynamic triage of a suspicious binary in a safe environment.",
+  "prerequisites": [
+   "sec.forensics",
+   "cs.os_basics"
+  ],
+  "difficulty": 5,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "static analysis",
+   "sandbox",
+   "ioc",
+   "reverse engineering"
+  ]
+ },
+ {
+  "id": "sec.cloud_security",
+  "name": "Cloud Security",
+  "track": "cybersecurity",
+  "description": "Shared responsibility, identity misconfiguration and securing managed services.",
+  "prerequisites": [
+   "sec.network_security",
+   "cloud.iam"
+  ],
+  "difficulty": 5,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "shared responsibility",
+   "misconfiguration",
+   "least privilege",
+   "cspm"
+  ]
+ },
+ {
+  "id": "sec.governance",
+  "name": "Governance, Risk and Compliance",
+  "track": "cybersecurity",
+  "description": "Policy, standards, audit and translating regulation into controls.",
+  "prerequisites": [
+   "sec.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "policy",
+   "iso 27001",
+   "audit",
+   "risk register",
+   "compliance"
+  ]
+ },
+ {
+  "id": "sec.analyst",
+  "name": "Security Analyst",
+  "track": "cybersecurity",
+  "description": "Detect, triage and respond to real incidents against a monitored estate.",
+  "prerequisites": [
+   "sec.siem",
+   "sec.forensics",
+   "sec.governance",
+   "sec.firewalls_ids"
+  ],
+  "difficulty": 5,
+  "est_hours": 8,
+  "assessable": false,
+  "keywords": [
+   "soc analyst",
+   "blue team",
+   "detection",
+   "response"
+  ]
+ },
+ {
+  "id": "sec.pentester",
+  "name": "Penetration Tester",
+  "track": "cybersecurity",
+  "description": "Assess a target end to end under an authorised scope and report impact.",
+  "prerequisites": [
+   "sec.exploitation",
+   "sec.xss_csrf",
+   "sec.sql_injection",
+   "sec.auth_security"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": false,
+  "keywords": [
+   "red team",
+   "pentest",
+   "offensive security"
+  ]
+ },
+ {
+  "id": "cloud.linux_admin",
+  "name": "Linux Administration",
+  "track": "cloud-devops",
+  "description": "Users, services, packages, systemd and reading logs when something breaks.",
+  "prerequisites": [
+   "cs.os_basics",
+   "prog.cli"
+  ],
+  "difficulty": 3,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "systemd",
+   "package manager",
+   "users",
+   "logs",
+   "cron"
+  ]
+ },
+ {
+  "id": "cloud.shell_scripting",
+  "name": "Shell Scripting",
+  "track": "cloud-devops",
+  "description": "Automating repetitive operations with a script that fails safely.",
+  "prerequisites": [
+   "prog.cli"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "bash",
+   "exit code",
+   "set -e",
+   "argument parsing"
+  ]
+ },
+ {
+  "id": "cloud.fundamentals",
+  "name": "Cloud Fundamentals",
+  "track": "cloud-devops",
+  "description": "Regions, availability zones, service models and the pricing model behind them.",
+  "prerequisites": [
+   "cs.networking"
+  ],
+  "difficulty": 2,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "iaas",
+   "paas",
+   "region",
+   "availability zone",
+   "shared responsibility"
+  ]
+ },
+ {
+  "id": "cloud.virtualization",
+  "name": "Virtualisation and Containers",
+  "track": "cloud-devops",
+  "description": "Hypervisors versus namespaces, and what a container actually isolates.",
+  "prerequisites": [
+   "cs.os_basics"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "hypervisor",
+   "namespace",
+   "cgroup",
+   "image"
+  ]
+ },
+ {
+  "id": "cloud.docker",
+  "name": "Docker",
+  "track": "cloud-devops",
+  "description": "Images, layers, Dockerfiles and running an application reproducibly.",
+  "prerequisites": [
+   "cloud.linux_admin",
+   "cloud.virtualization"
+  ],
+  "difficulty": 3,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "docker",
+   "dockerfile",
+   "image layer",
+   "volume",
+   "port mapping"
+  ]
+ },
+ {
+  "id": "cloud.compose",
+  "name": "Multi-Container Applications",
+  "track": "cloud-devops",
+  "description": "Composing services, networks and volumes for a whole stack.",
+  "prerequisites": [
+   "cloud.docker"
+  ],
+  "difficulty": 3,
+  "est_hours": 5,
+  "assessable": true,
+  "keywords": [
+   "docker compose",
+   "service",
+   "network",
+   "dependency"
+  ]
+ },
+ {
+  "id": "cloud.kubernetes",
+  "name": "Kubernetes Fundamentals",
+  "track": "cloud-devops",
+  "description": "Pods, deployments, services and the declarative reconciliation loop.",
+  "prerequisites": [
+   "cloud.compose",
+   "cs.networking"
+  ],
+  "difficulty": 4,
+  "est_hours": 12,
+  "assessable": true,
+  "keywords": [
+   "kubernetes",
+   "pod",
+   "deployment",
+   "service",
+   "manifest"
+  ]
+ },
+ {
+  "id": "cloud.kubernetes_ops",
+  "name": "Operating Kubernetes",
+  "track": "cloud-devops",
+  "description": "Scaling, rollouts, resource limits and debugging a cluster under load.",
+  "prerequisites": [
+   "cloud.kubernetes"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "hpa",
+   "rolling update",
+   "resource limits",
+   "ingress",
+   "helm"
+  ]
+ },
+ {
+  "id": "cloud.iam",
+  "name": "Identity and Access Management",
+  "track": "cloud-devops",
+  "description": "Principals, policies, roles and granting the least privilege that works.",
+  "prerequisites": [
+   "cloud.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "iam",
+   "policy",
+   "role",
+   "least privilege",
+   "federation"
+  ]
+ },
+ {
+  "id": "cloud.compute",
+  "name": "Cloud Compute Services",
+  "track": "cloud-devops",
+  "description": "Virtual machines, autoscaling groups and managed runtimes.",
+  "prerequisites": [
+   "cloud.fundamentals",
+   "cloud.linux_admin"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "vm",
+   "autoscaling",
+   "load balancer",
+   "instance type"
+  ]
+ },
+ {
+  "id": "cloud.storage",
+  "name": "Cloud Storage and Databases",
+  "track": "cloud-devops",
+  "description": "Object storage, block storage, managed databases and durability guarantees.",
+  "prerequisites": [
+   "cloud.fundamentals"
+  ],
+  "difficulty": 3,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "object storage",
+   "s3",
+   "block storage",
+   "backup",
+   "durability"
+  ]
+ },
+ {
+  "id": "cloud.networking",
+  "name": "Cloud Networking",
+  "track": "cloud-devops",
+  "description": "Virtual networks, subnets, security groups and private connectivity.",
+  "prerequisites": [
+   "cloud.fundamentals",
+   "cs.networking"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "vpc",
+   "subnet",
+   "security group",
+   "nat",
+   "peering"
+  ]
+ },
+ {
+  "id": "cloud.iac",
+  "name": "Infrastructure as Code",
+  "track": "cloud-devops",
+  "description": "Declaring infrastructure, planning changes and managing state.",
+  "prerequisites": [
+   "cloud.compute",
+   "cloud.networking"
+  ],
+  "difficulty": 4,
+  "est_hours": 10,
+  "assessable": true,
+  "keywords": [
+   "terraform",
+   "state file",
+   "plan apply",
+   "module",
+   "drift"
+  ]
+ },
+ {
+  "id": "cloud.config_management",
+  "name": "Configuration Management",
+  "track": "cloud-devops",
+  "description": "Converging machines to a declared state instead of editing them by hand.",
+  "prerequisites": [
+   "cloud.shell_scripting",
+   "cloud.linux_admin"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "ansible",
+   "idempotent",
+   "playbook",
+   "inventory"
+  ]
+ },
+ {
+  "id": "cloud.ci_cd",
+  "name": "Continuous Integration and Delivery",
+  "track": "cloud-devops",
+  "description": "Automated build, test and release on every commit.",
+  "prerequisites": [
+   "prog.git",
+   "cloud.shell_scripting"
+  ],
+  "difficulty": 3,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "ci",
+   "cd",
+   "pipeline",
+   "artifact",
+   "github actions"
+  ]
+ },
+ {
+  "id": "cloud.pipeline_automation",
+  "name": "Deployment Automation",
+  "track": "cloud-devops",
+  "description": "Build-once artefacts, environment promotion and safe rollback.",
+  "prerequisites": [
+   "cloud.ci_cd",
+   "cloud.docker"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "blue green",
+   "canary",
+   "rollback",
+   "promotion",
+   "registry"
+  ]
+ },
+ {
+  "id": "cloud.observability",
+  "name": "Observability",
+  "track": "cloud-devops",
+  "description": "Metrics, logs and traces, and alerting on symptoms rather than causes.",
+  "prerequisites": [
+   "cloud.compute",
+   "cloud.shell_scripting"
+  ],
+  "difficulty": 4,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "prometheus",
+   "tracing",
+   "slo",
+   "alerting",
+   "dashboards"
+  ]
+ },
+ {
+  "id": "cloud.serverless",
+  "name": "Serverless Architectures",
+  "track": "cloud-devops",
+  "description": "Functions, event sources, cold starts and where serverless stops paying off.",
+  "prerequisites": [
+   "cloud.compute",
+   "cloud.iam"
+  ],
+  "difficulty": 4,
+  "est_hours": 6,
+  "assessable": true,
+  "keywords": [
+   "lambda",
+   "event driven",
+   "cold start",
+   "api gateway"
+  ]
+ },
+ {
+  "id": "cloud.sre",
+  "name": "Site Reliability Engineering",
+  "track": "cloud-devops",
+  "description": "Error budgets, incident review and engineering for reliability targets.",
+  "prerequisites": [
+   "cloud.observability",
+   "cloud.kubernetes_ops"
+  ],
+  "difficulty": 5,
+  "est_hours": 8,
+  "assessable": true,
+  "keywords": [
+   "sre",
+   "error budget",
+   "postmortem",
+   "toil",
+   "slo"
+  ]
+ },
+ {
+  "id": "cloud.devops_engineer",
+  "name": "DevOps Engineer",
+  "track": "cloud-devops",
+  "description": "Own the path from commit to production, and keep it fast and reversible.",
+  "prerequisites": [
+   "cloud.pipeline_automation",
+   "cloud.iac",
+   "cloud.kubernetes_ops",
+   "cloud.observability"
+  ],
+  "difficulty": 5,
+  "est_hours": 10,
+  "assessable": false,
+  "keywords": [
+   "devops",
+   "automation",
+   "delivery",
+   "platform"
+  ]
+ },
+ {
+  "id": "cloud.architect",
+  "name": "Cloud Architect",
+  "track": "cloud-devops",
+  "description": "Design cloud systems that meet cost, reliability and security constraints together.",
+  "prerequisites": [
+   "cloud.iac",
+   "cloud.networking",
+   "cloud.storage",
+   "cloud.serverless",
+   "sec.cloud_security"
+  ],
+  "difficulty": 5,
+  "est_hours": 12,
+  "assessable": false,
+  "keywords": [
+   "architecture",
+   "cost optimisation",
+   "well-architected",
+   "resilience"
+  ]
+ }
+]
