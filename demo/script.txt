@@ -1,0 +1,110 @@
+LODESTAR — DEMO NARRATION
+Nine scenes, about 4:00 total. One paragraph per scene; make_voiceover.py renders
+each to its own MP3 and prints its duration, so video can be cut to the audio.
+
+Scenes are separated by a line containing only ---
+
+
+=== SCENE 1 — The problem (0:00–0:20)
+On screen: title card, then a wall of course thumbnails.
+
+Search any platform for machine learning and you get thousands of courses. Every
+one is relevant. None of them tell you what to do first. Recommendation answers
+"what is relevant to me", and it answers with similarity. Learners need
+something else: a sequence. What must come first, and what am I allowed to start
+only after. Lodestar answers the second question.
+
+---
+
+=== SCENE 2 — Intake (0:20–0:50)
+On screen: the intake chat; the profile card filling in field by field.
+
+It starts in plain English. "Second year CS student, I know Python and git, I
+want to be an ML engineer, six hours a week, free resources only." Watch the
+panel on the right. Goal, hours, experience, prior knowledge, cost — each
+appears as it is extracted, and nothing appears that was not actually said. An
+unstated field stays empty and the assistant asks for it, because a fabricated
+field is worse than a missing one.
+
+---
+
+=== SCENE 3 — Diagnostic (0:50–1:20)
+On screen: the diagnostic; deliberately answer one question wrong.
+
+Self-report is the weakest signal in education technology, so we measure
+instead. This question is not random: it targets the skill with the highest
+uncertainty times the highest downstream impact. Measuring something that
+unblocks fifty other skills is worth more than measuring a leaf. Watch the
+confidence meter. And note that "I don't know" is a real button, because
+guessing pollutes the measurement.
+
+---
+
+=== SCENE 4 — The path and the Why chip (1:20–2:20)
+On screen: the skill graph, then the weekly timeline, then a Why chip expanded.
+
+This is a dependency graph, not a ranked list. A hundred and fifty two skills,
+two hundred and fifty five prerequisite edges, and the highlighted route is a
+topological ordering of the gap between where this learner actually is and where
+they want to be, packed into the six hours a week they actually have. Every step
+carries a reason, and the reason is not a paragraph a model invented. Open the
+Why chip. The dependency chain to the goal, computed from the graph. The
+measured level, with the question ids behind it. The resource, how many
+alternatives it beat, and why. The week, and what it unlocks. The model is shown
+only this object and asked for two sentences, so it cannot state a reason the
+data does not support. Pull the API key and the same reason still appears, from
+a template.
+
+---
+
+=== SCENE 5 — Adaptation (2:20–2:50)
+On screen: mark an item "too easy", then fail a milestone. Zoom the diff banner.
+
+Feedback has to do something visible. Marking this step as already known raises
+the mastery, drops the skill, and pulls everything after it forward. The banner
+shows exactly that: one item removed, forty-three moved, finish a week earlier.
+Now fail a checkpoint, and remediation returns. Each event writes a new version
+rather than editing the old one, which is what makes the difference computable
+at all.
+
+---
+
+=== SCENE 6 — What if (2:50–3:10)
+On screen: drag the hours slider from six to eighteen.
+
+A path without a calendar is a wish list. This slider asks a question rather
+than making a decision: it re-runs the whole planner at a hypothetical capacity
+and shows the new finish week live. Six hours a week finishes in week
+forty-seven. Eighteen finishes in week sixteen. Nothing is saved until the
+learner commits.
+
+---
+
+=== SCENE 7 — Dashboard (3:10–3:30)
+On screen: the dashboard.
+
+Progress, hours done against hours remaining, mastery by track averaged over
+only the skills this goal requires, and the next three actions. The activity
+feed is a direct read of the event log. Every state change is appended there,
+which is why nothing about the plan can change silently.
+
+---
+
+=== SCENE 8 — Architecture and evaluation (3:30–3:50)
+On screen: the layer diagram, then the evaluation table.
+
+Deterministic algorithms do the reasoning; the model does the language. Twenty
+synthetic personas with hand-written gold paths give us: zero prerequisite-order
+violations, a hundred percent goal coverage, zero redundancy, path length within
+three percent of gold, and p95 generation under four milliseconds. Four hundred
+and twenty six resources, every URL checked with a real HTTP request. Knowing
+where not to use a model is the point. A topological sort is not a machine
+learning problem.
+
+---
+
+=== SCENE 9 — Close (3:50–4:00)
+On screen: the live URL and the repository.
+
+Lodestar. Learning is a dependency graph, not a search result. Live at the link
+on screen, source on GitHub, and it runs end to end with no API key at all.

@@ -1,0 +1,520 @@
+[
+ {
+  "id": "ml_absolute_beginner",
+  "goal_node_ids": [
+   "ml.engineer"
+  ],
+  "hours_per_week": 6,
+  "known_skills": [],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "beginner",
+  "gold_path_length": 44,
+  "must_cover": [
+   "math.linear_algebra",
+   "ml.engineer",
+   "ml.gradient_descent",
+   "prog.python_basics"
+  ]
+ },
+ {
+  "id": "ml_cs_student",
+  "goal_node_ids": [
+   "ml.engineer"
+  ],
+  "hours_per_week": 10,
+  "known_skills": [
+   "math.algebra",
+   "math.functions_graphs",
+   "prog.cli",
+   "prog.control_flow",
+   "prog.files_io",
+   "prog.functions",
+   "prog.git",
+   "prog.python_basics",
+   "prog.python_data_structures",
+   "prog.python_oop"
+  ],
+  "format_pref": "any",
+  "cost_pref": "free",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 36,
+  "must_cover": [
+   "math.derivatives",
+   "ml.backpropagation",
+   "ml.mlops"
+  ]
+ },
+ {
+  "id": "ml_web_dev_switcher",
+  "goal_node_ids": [
+   "ml.engineer"
+  ],
+  "hours_per_week": 8,
+  "known_skills": [
+   "prog.cli",
+   "prog.control_flow",
+   "prog.git",
+   "prog.python_basics",
+   "prog.python_data_structures",
+   "web.css",
+   "web.dom",
+   "web.html",
+   "web.http",
+   "web.javascript",
+   "web.js_async",
+   "web.modules",
+   "web.npm",
+   "web.react",
+   "web.typescript"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 34,
+  "must_cover": [
+   "math.statistics",
+   "ml.engineer",
+   "ml.neural_nets"
+  ]
+ },
+ {
+  "id": "ml_deep_learning_focus",
+  "goal_node_ids": [
+   "ml.cnn"
+  ],
+  "hours_per_week": 12,
+  "known_skills": [
+   "math.algebra",
+   "math.derivatives",
+   "math.functions_graphs",
+   "prog.control_flow",
+   "prog.files_io",
+   "prog.functions",
+   "prog.numpy",
+   "prog.python_basics",
+   "prog.python_data_structures",
+   "prog.python_oop"
+  ],
+  "format_pref": "video",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 18,
+  "must_cover": [
+   "ml.cnn",
+   "ml.frameworks"
+  ]
+ },
+ {
+  "id": "ml_llm_builder",
+  "goal_node_ids": [
+   "ml.llm_applications"
+  ],
+  "hours_per_week": 15,
+  "known_skills": [
+   "prog.cli",
+   "prog.control_flow",
+   "prog.files_io",
+   "prog.functions",
+   "prog.git",
+   "prog.python_basics",
+   "prog.python_data_structures",
+   "prog.python_oop",
+   "web.css",
+   "web.dom",
+   "web.html",
+   "web.javascript",
+   "web.modules",
+   "web.npm"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 32,
+  "must_cover": [
+   "ml.llm_applications",
+   "ml.nlp_basics",
+   "ml.transformers"
+  ]
+ },
+ {
+  "id": "web_absolute_beginner",
+  "goal_node_ids": [
+   "web.fullstack_engineer"
+  ],
+  "hours_per_week": 8,
+  "known_skills": [],
+  "format_pref": "any",
+  "cost_pref": "free",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "beginner",
+  "gold_path_length": 32,
+  "must_cover": [
+   "web.auth_sessions",
+   "web.fullstack_engineer",
+   "web.html",
+   "web.react"
+  ]
+ },
+ {
+  "id": "web_frontend_to_fullstack",
+  "goal_node_ids": [
+   "web.fullstack_engineer"
+  ],
+  "hours_per_week": 10,
+  "known_skills": [
+   "prog.cli",
+   "prog.git",
+   "web.css",
+   "web.dom",
+   "web.html",
+   "web.javascript",
+   "web.modules",
+   "web.npm"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 24,
+  "must_cover": [
+   "web.deployment",
+   "web.node_backend",
+   "web.orm_persistence"
+  ]
+ },
+ {
+  "id": "web_low_bandwidth",
+  "goal_node_ids": [
+   "web.fullstack_engineer"
+  ],
+  "hours_per_week": 5,
+  "known_skills": [
+   "prog.cli",
+   "prog.git"
+  ],
+  "format_pref": "text",
+  "cost_pref": "free",
+  "language": "en",
+  "low_bandwidth": true,
+  "experience_level": "intermediate",
+  "gold_path_length": 31,
+  "must_cover": [
+   "web.html",
+   "web.javascript",
+   "web.rest_api_design"
+  ]
+ },
+ {
+  "id": "web_react_specialist",
+  "goal_node_ids": [
+   "web.state_management"
+  ],
+  "hours_per_week": 12,
+  "known_skills": [
+   "web.css",
+   "web.dom",
+   "web.html",
+   "web.javascript",
+   "web.modules",
+   "web.npm"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 6,
+  "must_cover": [
+   "web.react_hooks",
+   "web.react_state",
+   "web.state_management"
+  ]
+ },
+ {
+  "id": "web_accessibility_focus",
+  "goal_node_ids": [
+   "web.accessibility"
+  ],
+  "hours_per_week": 4,
+  "known_skills": [],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "beginner",
+  "gold_path_length": 4,
+  "must_cover": [
+   "web.accessibility",
+   "web.css",
+   "web.html"
+  ]
+ },
+ {
+  "id": "da_career_changer",
+  "goal_node_ids": [
+   "da.analyst"
+  ],
+  "hours_per_week": 6,
+  "known_skills": [],
+  "format_pref": "any",
+  "cost_pref": "free",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "beginner",
+  "gold_path_length": 26,
+  "must_cover": [
+   "da.analyst",
+   "da.dashboards",
+   "da.sql_analytics",
+   "math.statistics"
+  ]
+ },
+ {
+  "id": "da_sql_experienced",
+  "goal_node_ids": [
+   "da.analyst"
+  ],
+  "hours_per_week": 10,
+  "known_skills": [
+   "data.sql_basics",
+   "data.sql_joins",
+   "prog.cli",
+   "prog.control_flow",
+   "prog.python_basics",
+   "prog.python_data_structures"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 22,
+  "must_cover": [
+   "da.ab_testing",
+   "da.experiment_design",
+   "math.probability"
+  ]
+ },
+ {
+  "id": "da_engineer_track",
+  "goal_node_ids": [
+   "da.data_engineer"
+  ],
+  "hours_per_week": 12,
+  "known_skills": [
+   "cs.networking",
+   "cs.os_basics",
+   "data.sql_basics",
+   "data.sql_joins",
+   "prog.cli",
+   "prog.control_flow",
+   "prog.files_io",
+   "prog.functions",
+   "prog.git",
+   "prog.python_basics",
+   "prog.python_data_structures",
+   "prog.python_oop"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 18,
+  "must_cover": [
+   "cloud.docker",
+   "da.etl",
+   "da.warehousing"
+  ]
+ },
+ {
+  "id": "da_forecasting",
+  "goal_node_ids": [
+   "da.forecasting"
+  ],
+  "hours_per_week": 8,
+  "known_skills": [
+   "math.algebra",
+   "math.functions_graphs",
+   "prog.control_flow",
+   "prog.files_io",
+   "prog.functions",
+   "prog.numpy",
+   "prog.pandas",
+   "prog.python_basics",
+   "prog.python_data_structures",
+   "prog.python_oop"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 12,
+  "must_cover": [
+   "da.forecasting",
+   "da.time_series"
+  ]
+ },
+ {
+  "id": "sec_blue_team_beginner",
+  "goal_node_ids": [
+   "sec.analyst"
+  ],
+  "hours_per_week": 8,
+  "known_skills": [],
+  "format_pref": "any",
+  "cost_pref": "free",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "beginner",
+  "gold_path_length": 13,
+  "must_cover": [
+   "cs.networking",
+   "sec.analyst",
+   "sec.fundamentals",
+   "sec.siem"
+  ]
+ },
+ {
+  "id": "sec_red_team",
+  "goal_node_ids": [
+   "sec.pentester"
+  ],
+  "hours_per_week": 12,
+  "known_skills": [
+   "cs.networking",
+   "cs.os_basics",
+   "prog.cli",
+   "prog.control_flow",
+   "prog.git",
+   "prog.python_basics",
+   "prog.python_data_structures"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 20,
+  "must_cover": [
+   "sec.exploitation",
+   "sec.pentester",
+   "sec.web_vulnerabilities"
+  ]
+ },
+ {
+  "id": "sec_web_appsec",
+  "goal_node_ids": [
+   "sec.secure_coding"
+  ],
+  "hours_per_week": 6,
+  "known_skills": [
+   "prog.control_flow",
+   "prog.files_io",
+   "prog.functions",
+   "prog.python_basics",
+   "prog.python_data_structures",
+   "prog.python_oop",
+   "web.css",
+   "web.dom",
+   "web.html",
+   "web.http",
+   "web.javascript",
+   "web.modules",
+   "web.npm"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 8,
+  "must_cover": [
+   "sec.secure_coding",
+   "sec.web_vulnerabilities"
+  ]
+ },
+ {
+  "id": "cloud_sysadmin_upskill",
+  "goal_node_ids": [
+   "cloud.devops_engineer"
+  ],
+  "hours_per_week": 10,
+  "known_skills": [
+   "cs.networking",
+   "cs.os_basics",
+   "prog.cli",
+   "prog.git"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 18,
+  "must_cover": [
+   "cloud.ci_cd",
+   "cloud.devops_engineer",
+   "cloud.docker",
+   "cloud.kubernetes"
+  ]
+ },
+ {
+  "id": "cloud_architect_track",
+  "goal_node_ids": [
+   "cloud.architect"
+  ],
+  "hours_per_week": 8,
+  "known_skills": [
+   "cs.networking",
+   "cs.os_basics",
+   "prog.cli"
+  ],
+  "format_pref": "any",
+  "cost_pref": "free",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 17,
+  "must_cover": [
+   "cloud.iac",
+   "cloud.networking",
+   "sec.cloud_security"
+  ]
+ },
+ {
+  "id": "cloud_one_hour_a_week",
+  "goal_node_ids": [
+   "cloud.docker"
+  ],
+  "hours_per_week": 1,
+  "known_skills": [
+   "prog.cli"
+  ],
+  "format_pref": "any",
+  "cost_pref": "any",
+  "language": "en",
+  "low_bandwidth": false,
+  "experience_level": "intermediate",
+  "gold_path_length": 4,
+  "must_cover": [
+   "cloud.docker",
+   "cloud.linux_admin",
+   "cs.os_basics"
+  ]
+ }
+]

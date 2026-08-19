@@ -272,3 +272,34 @@ useless and one that is useful.
 long ML path. That is correct behaviour — a topological order interleaves tracks
 until the end, so no track genuinely *finishes* early — but it reads oddly on
 the dashboard. Left as is rather than faking earlier checkpoints.
+
+---
+
+## Phase 9 — Evaluation, deployment and demo assets
+
+**Every metric passed on the first run**, which is unusual enough to be worth
+saying plainly rather than quietly: 0% prerequisite violations, 100% goal
+coverage, 0% redundancy, 0.97x path length against gold, 100% free-only
+compliance, 100% grounding, p95 path generation 3.9 ms. The numbers are in
+`EVAL_RESULTS.md` and were produced by `scripts/evaluate.py`, not typed.
+
+**Gold path lengths are hand-estimated, and that is the weakest number here.**
+The 0.97x ratio compares generated step counts against my own judgement of what
+a competent planner would produce for each persona. Nobody else reviewed those
+twenty estimates. It is a sanity check against padding or skipping, not an
+external benchmark, and the report says so.
+
+**The eval harness runs against a scratch database and never calls a model.**
+`DATABASE_URL` is redirected before any app import and the file is deleted at
+the end, so running the harness cannot pollute a developer's own data or make a
+metric depend on network conditions.
+
+**The demo script was cut from 4:59 to 4:08.** The first draft would have run
+right up against the five-minute submission limit with no room for edits.
+`make_voiceover.py` parses the scene headers and prints per-scene durations, so
+the length is checked rather than guessed.
+
+**`seed_demo.py` exists because typing into a form on camera wastes thirty
+seconds** of a four-minute budget and invites a typo on take five. It builds a
+learner with a completed diagnostic, a generated path and three completed steps
+in about two seconds, with no model calls.
