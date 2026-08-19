@@ -17,34 +17,34 @@ Provider: none -- the whole harness runs deterministically with no model.
 | Goal-skill coverage | **100.0%** | >=95% | PASS | 62/62 must-cover skills present |
 | Redundancy (repeated skills) | **0.0%** | 0% | PASS | 0 duplicated steps |
 | Path length vs gold (mean) | **0.97x** | 0.80-1.30x | PASS | 16/20 personas individually inside the band |
-| Free-only compliance | **100.0%** | 100% | PASS | 0 paid resources across 461 bindings for free-only learners |
-| Grounding (resources in catalog) | **100.0%** | 100% | PASS | 1225/1225 bound ids resolve to a catalog entry |
-| p95 warm path generation | **3.9ms** | <2000ms | PASS | over 50 runs, no model calls |
+| Free-only compliance | **100.0%** | 100% | PASS | 0 paid resources across 407 bindings for free-only learners |
+| Grounding (resources in catalog) | **100.0%** | 100% | PASS | 1057/1057 bound ids resolve to a catalog entry |
+| p95 warm path generation | **3.8ms** | <2000ms | PASS | over 50 runs, no model calls |
 
 ## Per-persona detail
 
 | Persona | Steps | Gold | Ratio | Finish week | Hours | Violations | Must-cover | Unbound |
 |---|---|---|---|---|---|---|---|---|
-| `ml_absolute_beginner` | 47 | 44 | 1.07x | 43 | 256.08 | 0 | 4/4 | 0 |
-| `ml_cs_student` | 37 | 36 | 1.03x | 20 | 194.08 | 0 | 3/3 | 0 |
-| `ml_web_dev_switcher` | 41 | 34 | 1.21x | 28 | 223.58 | 0 | 3/3 | 0 |
-| `ml_deep_learning_focus` | 14 | 18 | 0.78x | 9 | 102.5 | 0 | 2/2 | 0 |
-| `ml_llm_builder` | 32 | 32 | 1.0x | 13 | 184.0 | 0 | 3/3 | 0 |
-| `web_absolute_beginner` | 36 | 32 | 1.12x | 30 | 234.67 | 0 | 4/4 | 0 |
-| `web_frontend_to_fullstack` | 30 | 24 | 1.25x | 19 | 183.17 | 0 | 3/3 | 0 |
-| `web_low_bandwidth` | 35 | 31 | 1.13x | 50 | 245.5 | 0 | 3/3 | 0 |
-| `web_react_specialist` | 5 | 6 | 0.83x | 3 | 28.5 | 0 | 3/3 | 0 |
+| `ml_absolute_beginner` | 47 | 44 | 1.07x | 49 | 291.08 | 0 | 4/4 | 0 |
+| `ml_cs_student` | 37 | 36 | 1.03x | 23 | 223.08 | 0 | 3/3 | 0 |
+| `ml_web_dev_switcher` | 41 | 34 | 1.21x | 32 | 250.58 | 0 | 3/3 | 0 |
+| `ml_deep_learning_focus` | 14 | 18 | 0.78x | 10 | 117.0 | 0 | 2/2 | 0 |
+| `ml_llm_builder` | 32 | 32 | 1.0x | 15 | 212.5 | 0 | 3/3 | 0 |
+| `web_absolute_beginner` | 36 | 32 | 1.12x | 32 | 251.67 | 0 | 4/4 | 0 |
+| `web_frontend_to_fullstack` | 30 | 24 | 1.25x | 20 | 195.67 | 0 | 3/3 | 0 |
+| `web_low_bandwidth` | 35 | 31 | 1.13x | 49 | 244.17 | 0 | 3/3 | 0 |
+| `web_react_specialist` | 5 | 6 | 0.83x | 3 | 33.0 | 0 | 3/3 | 0 |
 | `web_accessibility_focus` | 3 | 4 | 0.75x | 7 | 26.5 | 0 | 3/3 | 0 |
-| `da_career_changer` | 28 | 26 | 1.08x | 29 | 171.87 | 0 | 4/4 | 0 |
-| `da_sql_experienced` | 22 | 22 | 1.0x | 16 | 153.37 | 0 | 3/3 | 0 |
-| `da_engineer_track` | 17 | 18 | 0.94x | 11 | 129.75 | 0 | 3/3 | 0 |
-| `da_forecasting` | 9 | 12 | 0.75x | 13 | 96.5 | 0 | 2/2 | 0 |
-| `sec_blue_team_beginner` | 12 | 13 | 0.92x | 11 | 85.5 | 0 | 4/4 | 0 |
-| `sec_red_team` | 20 | 20 | 1.0x | 13 | 148.86 | 0 | 3/3 | 0 |
-| `sec_web_appsec` | 8 | 8 | 1.0x | 10 | 54.93 | 0 | 2/2 | 0 |
-| `cloud_sysadmin_upskill` | 15 | 18 | 0.83x | 12 | 119.0 | 0 | 4/4 | 0 |
-| `cloud_architect_track` | 12 | 17 | 0.71x | 13 | 99.5 | 0 | 3/3 | 0 |
-| `cloud_one_hour_a_week` | 4 | 4 | 1.0x | 22 | 22.0 | 0 | 3/3 | 0 |
+| `da_career_changer` | 28 | 26 | 1.08x | 33 | 196.13 | 0 | 4/4 | 0 |
+| `da_sql_experienced` | 22 | 22 | 1.0x | 17 | 166.63 | 0 | 3/3 | 0 |
+| `da_engineer_track` | 17 | 18 | 0.94x | 11 | 130.5 | 0 | 3/3 | 0 |
+| `da_forecasting` | 9 | 12 | 0.75x | 14 | 104.33 | 0 | 2/2 | 0 |
+| `sec_blue_team_beginner` | 12 | 13 | 0.92x | 16 | 128.0 | 0 | 4/4 | 0 |
+| `sec_red_team` | 20 | 20 | 1.0x | 13 | 149.93 | 0 | 3/3 | 0 |
+| `sec_web_appsec` | 8 | 8 | 1.0x | 10 | 58.43 | 0 | 2/2 | 0 |
+| `cloud_sysadmin_upskill` | 15 | 18 | 0.83x | 11 | 108.79 | 0 | 4/4 | 0 |
+| `cloud_architect_track` | 12 | 17 | 0.71x | 15 | 113.5 | 0 | 3/3 | 0 |
+| `cloud_one_hour_a_week` | 4 | 4 | 1.0x | 34 | 34.0 | 0 | 3/3 | 0 |
 
 ## Latency
 
@@ -52,12 +52,12 @@ Measured on the build machine with a warm process and no model calls.
 
 | Operation | Runs | Mean | p50 | p95 | Max |
 |---|---|---|---|---|---|
-| path generation warm | 50 | 4.09ms | 3.36ms | 3.88ms | 38.36ms |
-| path generation cold | 5 | 12.71ms | 12.8ms | 13.83ms | 13.83ms |
-| health | 50 | 1.93ms | 1.78ms | 2.69ms | 4.35ms |
-| diagnostic next | 10 | 8.32ms | 5.28ms | 37.07ms | 37.07ms |
-| dashboard | 50 | 11.67ms | 11.34ms | 13.81ms | 15.54ms |
-| path fetch | 50 | 12.51ms | 11.67ms | 13.06ms | 51.67ms |
+| path generation warm | 50 | 3.26ms | 3.16ms | 3.75ms | 5.74ms |
+| path generation cold | 5 | 11.68ms | 11.01ms | 14.79ms | 14.79ms |
+| health | 50 | 2.17ms | 2.07ms | 2.7ms | 4.57ms |
+| diagnostic next | 10 | 8.75ms | 4.87ms | 43.6ms | 43.6ms |
+| dashboard | 50 | 12.63ms | 11.26ms | 14.16ms | 60.88ms |
+| path fetch | 50 | 11.6ms | 11.51ms | 13.01ms | 13.68ms |
 
 ## Verdict
 

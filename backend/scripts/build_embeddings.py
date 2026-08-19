@@ -1,29 +1,22 @@
 """Precompute the embedding matrices committed to the repository.
 
-Embedding 500 catalog entries and 152 skill nodes on every boot would make a
-fresh clone slow, expensive and dependent on an API key. Instead both matrices
-are built once, L2-normalised, and written as ``.npy`` files that ship with the
-repo. At request time only the learner's goal text is ever new.
+Embedding 426 catalog entries and 152 skill nodes on every boot would make a
+fresh clone slow. Instead both matrices are built once, L2-normalised, and
+written as ``.npy`` files that ship with the repo. At request time only the
+learner's goal text is ever new, and even that is embedded locally.
 
-**One file set per provider.** ``MockProvider`` and Gemini produce vectors in
-different spaces, so a query embedded by one cannot be compared against a matrix
-built by the other. Files are therefore suffixed by provider (`.mock.npy`), and
-``core.retrieval`` loads the set matching the active provider. This is what lets
-a clone with no API key still resolve goals sensibly instead of comparing noise.
+The filename names the model that produced it, so a matrix built with one
+embedder can never be silently compared against a query from another --
+``core.retrieval`` checks both the row count and the dimension before using one.
 
-Batched, resumable and idempotent: embeddings are cached by SHA256 of the text,
-so re-running after adding twenty catalog entries embeds twenty texts, not five
-hundred.
-
-    python -m scripts.build_embeddings            # active provider
-    python -m scripts.build_embeddings --both     # gemini and mock
+    python -m scripts.build_embeddings          # active embedder
+    python -m scripts.build_embeddings --both   # local model and offline fallback
 """
 
 from __future__ import annotations
 
 import argparse
 import logging
-import re
 import sys
 import time
 from pathlib import Path
@@ -33,99 +26,77 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import get_settings  # noqa: E402
+from app.core.embeddings import Embedder, FastEmbedder, HashingEmbedder  # noqa: E402
+from app.core.embeddings import get_embedder, reset_embedder  # noqa: E402
 from app.core.retrieval import load_catalog, matrix_path, reset_caches  # noqa: E402
 from app.core.skill_graph import load_graph  # noqa: E402
-from app.db import init_db  # noqa: E402
-from app.llm.base import LLMProvider, ProviderUnavailable  # noqa: E402
 from app.logging_config import configure_logging  # noqa: E402
 
 logger = logging.getLogger("embeddings")
 
-BATCH_SIZE = 20
-FREE_TIER_PER_MINUTE = 55  # stay well inside the 100/min free-tier embed quota
-MAX_ATTEMPTS = 15
-_RETRY_DELAY_RE = re.compile(r"retry(?:_|\s*)?[dD]elay['\":\s]+(\d+(?:\.\d+)?)s?")
+BATCH_SIZE = 64
 
 
-def _retry_delay(message: str, default: float) -> float:
-    """Honour the server's own retry hint rather than guessing a backoff."""
-    match = _RETRY_DELAY_RE.search(message)
-    return min(float(match.group(1)) + 2.0, 90.0) if match else default
-
-
-def embed_texts(provider: LLMProvider, texts: list[str], label: str) -> np.ndarray:
-    """Embed in batches under the rate limit, L2-normalise, never half-write."""
-    remote = provider.name != "mock"
-    throttle = 60.0 * BATCH_SIZE / FREE_TIER_PER_MINUTE if remote else 0.0
-    vectors: list[list[float]] = []
+def embed_texts(embedder: Embedder, texts: list[str], label: str) -> np.ndarray:
+    """Embed in batches and fail loudly rather than write half a matrix."""
+    chunks: list[np.ndarray] = []
+    started = time.perf_counter()
 
     for start in range(0, len(texts), BATCH_SIZE):
-        chunk = texts[start : start + BATCH_SIZE]
-        for attempt in range(1, MAX_ATTEMPTS + 1):
-            try:
-                vectors.extend(provider.embed_batch(chunk))
-                break
-            except ProviderUnavailable as exc:
-                if attempt == MAX_ATTEMPTS:
-                    raise
-                wait = _retry_delay(str(exc), default=10.0 * attempt)
-                logger.warning("%s at %d rate-limited, sleeping %.0fs", label, start, wait)
-                time.sleep(wait)
-        logger.info("%s: %d/%d embedded", label, len(vectors), len(texts))
-        if throttle and start + BATCH_SIZE < len(texts):
-            time.sleep(throttle)
+        chunks.append(embedder.embed_batch(texts[start : start + BATCH_SIZE]))
+        logger.info("%s: %d/%d", label, min(start + BATCH_SIZE, len(texts)), len(texts))
 
-    matrix = np.asarray(vectors, dtype=np.float32)
-    norms = np.linalg.norm(matrix, axis=1, keepdims=True)
-    norms[norms == 0.0] = 1.0
-    matrix = matrix / norms
-
+    matrix = np.vstack(chunks) if chunks else np.zeros((0, embedder.dim), dtype=np.float32)
     if not np.isfinite(matrix).all():
         raise ValueError(f"{label} embeddings contain NaN or inf")
+
+    norms = np.linalg.norm(matrix, axis=1)
+    if matrix.size and float(np.abs(norms - 1.0).max()) > 1e-3:
+        raise ValueError(f"{label} embeddings are not unit length")
+
+    logger.info("%s: %d vectors in %.1fs", label, len(matrix), time.perf_counter() - started)
     return matrix
 
 
-def build_for(provider: LLMProvider) -> tuple[int, int]:
-    """Write both matrices for one provider. Returns (catalog rows, skill rows)."""
+def build_for(embedder: Embedder) -> tuple[int, int]:
+    """Write both matrices for one embedder. Returns (catalog rows, skill rows)."""
     catalog = load_catalog()
     graph = load_graph()
     skill_ids = sorted(graph.nodes)
 
     if catalog:
-        matrix = embed_texts(provider, [r.embed_text for r in catalog], "catalog")
-        np.save(matrix_path("catalog", provider.name), matrix)
+        matrix = embed_texts(embedder, [r.embed_text for r in catalog], "catalog")
+        np.save(matrix_path("catalog", embedder.name), matrix)
     else:
         logger.warning("catalog is empty -- skipping catalog embeddings")
 
-    skills = embed_texts(provider, [graph.nodes[s].embed_text for s in skill_ids], "skills")
-    np.save(matrix_path("skill", provider.name), skills)
-
+    skills = embed_texts(embedder, [graph.nodes[s].embed_text for s in skill_ids], "skills")
+    np.save(matrix_path("skill", embedder.name), skills)
     return len(catalog), len(skill_ids)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Precompute embedding matrices.")
-    parser.add_argument("--both", action="store_true", help="build for gemini and mock")
+    parser.add_argument("--both", action="store_true",
+                        help="also build the offline hashing fallback")
     args = parser.parse_args()
 
     settings = get_settings()
     configure_logging(settings.log_level)
-    # The EmbeddingCache table has to exist before the provider can read or write
-    # it. Without this the cache silently no-ops and every run pays full price.
-    init_db()
     reset_caches()
+    reset_embedder()
 
-    from app.llm import get_provider
-    from app.llm.mock import MockProvider
+    embedders: list[Embedder] = [get_embedder()]
+    if args.both and not isinstance(embedders[0], HashingEmbedder):
+        embedders.append(HashingEmbedder())
+    if args.both and isinstance(embedders[0], HashingEmbedder):
+        logger.warning("the local model is unavailable, so only the fallback was built")
 
-    providers: list[LLMProvider] = [get_provider()]
-    if args.both and providers[0].name != "mock":
-        providers.append(MockProvider())
-
-    for provider in providers:
-        rows, skills = build_for(provider)
-        logger.info("%s: %d catalog rows, %d skill rows -> %s",
-                    provider.name, rows, skills, settings.data_dir)
+    for embedder in embedders:
+        rows, skills = build_for(embedder)
+        logger.info("%s: %d catalog rows, %d skill rows, %d dims -> %s",
+                    embedder.name, rows, skills, embedder.dim, settings.data_dir)
+    del FastEmbedder  # imported for the type union only
     return 0
 
 

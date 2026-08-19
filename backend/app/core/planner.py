@@ -325,6 +325,39 @@ def _insert_milestones(items: list[PlannedItem], packer: WeekPacker) -> list[Pla
     return merged
 
 
+def week_allocations(
+    items: list[tuple[int, float]], hours_per_week: float
+) -> dict[int, float]:
+    """Replay the packing ledger from stored items: week -> hours actually spent.
+
+    An item's ``week_number`` is where it *starts*; a resource longer than one
+    week of capacity spills into the weeks after it. Summing item hours by start
+    week therefore reports "20 hours" in a 6-hour week, which reads as a bug even
+    though the schedule is correct. This gives the interface the real figure.
+
+    Takes ``(week_number, est_hours)`` pairs so it can be used on planner output
+    and on database rows alike.
+    """
+    capacity = max(0.5, float(hours_per_week))
+    load: dict[int, float] = {}
+
+    for start_week, hours in sorted(items):
+        week = max(1, start_week)
+        outstanding = max(0.0, hours)
+        load.setdefault(week, 0.0)
+        while outstanding > 1e-9 and week < MAX_PLAN_WEEKS:
+            take = min(outstanding, max(0.0, capacity - load.get(week, 0.0)))
+            if take <= 1e-9:
+                week += 1
+                load.setdefault(week, 0.0)
+                continue
+            load[week] = load.get(week, 0.0) + take
+            outstanding -= take
+            if outstanding > 1e-9:
+                week += 1
+    return {week: round(hours, 2) for week, hours in sorted(load.items())}
+
+
 def preference_from(
     *,
     format_pref: str,

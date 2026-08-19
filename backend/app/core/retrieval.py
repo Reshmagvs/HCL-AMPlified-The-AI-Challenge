@@ -48,11 +48,16 @@ WEIGHT_FORMAT = 0.15
 WEIGHT_COST = 0.10
 WEIGHT_RATING = 0.10
 
-# Below this cosine a resource does not credibly cover the skill at all. Real
-# matches sit at 0.75-0.85 and mis-mappings at 0.65-0.68, so the floor separates
-# them cleanly. It is a hard filter, not a weight: "Data Structures and
-# Algorithms" bound to Linux Administration is wrong however good the resource is.
-RELEVANCE_FLOOR = 0.70
+# A resource that does not credibly cover the skill is filtered out before any
+# score is computed: "Data Structures and Algorithms" bound to Linux
+# Administration is wrong however good the resource is.
+#
+# The rule is *relative* rather than an absolute cosine threshold, because
+# absolute similarity is model-specific -- the same correct pairing scores 0.82
+# under one embedder and 0.14 under another. Within one skill candidate set the
+# ordering is stable across models, so a candidate is kept when it lands within
+# RELEVANCE_MARGIN of the best candidate for that skill.
+RELEVANCE_MARGIN = 0.10
 
 _LEVEL_ORDER = {"beginner": 0, "intermediate": 1, "advanced": 2}
 _VIDEO_FORMATS = {"video"}
@@ -162,29 +167,31 @@ def skills_by_resource() -> dict[str, list[Resource]]:
     return index
 
 
-def matrix_path(kind: str, provider: str) -> Path:
-    """Where one provider's matrix lives.
+def matrix_path(kind: str, embedder: str) -> Path:
+    """Where one embedder's matrix lives.
 
-    Mock and Gemini vectors live in different spaces, so a query embedded by one
-    can never be compared against a matrix built by the other. Suffixing the
-    filename by provider keeps both sets committed side by side, which is what
-    lets a clone with no API key resolve goals sensibly rather than against noise.
+    Vectors from two different models are not comparable, so the filename names
+    the model that produced them and ``load_matrices`` refuses any matrix whose
+    shape disagrees with the active embedder. A silent mismatch would surface as
+    quietly terrible recommendations rather than as an error.
     """
-    suffix = "" if provider == "gemini" else f".{provider}"
-    return get_settings().data_dir / f"{kind}_embeddings{suffix}.npy"
+    return get_settings().data_dir / f"{kind}_embeddings.{embedder}.npy"
 
 
-def _load_matrix(path: Path, expected_rows: int, label: str) -> np.ndarray | None:
+def _load_matrix(
+    path: Path, expected_rows: int, expected_dim: int, label: str
+) -> np.ndarray | None:
     if not path.exists():
-        logger.warning("%s embeddings missing at %s", label, path)
+        logger.warning(
+            "%s embeddings missing at %s -- run: python -m scripts.build_embeddings",
+            label, path,
+        )
         return None
     matrix = np.load(path)
-    if matrix.shape[0] != expected_rows:
+    if matrix.shape[0] != expected_rows or matrix.shape[1] != expected_dim:
         logger.error(
-            "%s embeddings have %d rows but %d entries exist -- rebuild them",
-            label,
-            matrix.shape[0],
-            expected_rows,
+            "%s embeddings are %s but %d rows of %d dims are expected -- rebuild them",
+            label, matrix.shape, expected_rows, expected_dim,
         )
         return None
     return matrix.astype(np.float32)
@@ -195,18 +202,23 @@ def load_matrices() -> dict[str, Any]:
     """Load both embedding matrices plus the id -> row index maps."""
     from app.core.skill_graph import load_graph
 
-    from app.llm import get_provider
+    from app.core.embeddings import get_embedder
 
     catalog = load_catalog()
     skill_ids = sorted(load_graph().nodes)
-    provider = get_provider().name
+    embedder = get_embedder()
 
     return {
-        "provider": provider,
-        "catalog": _load_matrix(matrix_path("catalog", provider), len(catalog), "catalog"),
+        "embedder": embedder.name,
+        "dim": embedder.dim,
+        "catalog": _load_matrix(
+            matrix_path("catalog", embedder.name), len(catalog), embedder.dim, "catalog"
+        ),
         "catalog_ids": [r.id for r in catalog],
         "catalog_row": {r.id: i for i, r in enumerate(catalog)},
-        "skills": _load_matrix(matrix_path("skill", provider), len(skill_ids), "skill"),
+        "skills": _load_matrix(
+            matrix_path("skill", embedder.name), len(skill_ids), embedder.dim, "skill"
+        ),
         "skill_ids": skill_ids,
         "skill_row": {s: i for i, s in enumerate(skill_ids)},
     }
@@ -279,6 +291,13 @@ def _format_match(resource_format: str, pref: str) -> float:
     return 0.8 if {resource_format, pref} <= {"interactive", "course"} else 0.15
 
 
+def _relative_score(raw: float | None, measured: list[float]) -> float:
+    """Position within this candidate set, not an absolute similarity."""
+    if raw is None or not measured:
+        return 0.5
+    return max(0.0, min(1.0, 1.0 - (max(measured) - raw) / RELEVANCE_MARGIN))
+
+
 def _relevance(query: np.ndarray | None, vector: np.ndarray | None) -> float | None:
     """Cosine between a skill and a resource, or None when either is unembedded."""
     if query is None or vector is None:
@@ -319,20 +338,24 @@ def score_resources(
     target_level = expected_level(difficulty)
 
     relevance = {r.id: _relevance(query, resource_vector(r.id)) for r in candidates}
-    on_topic = [r for r in candidates if relevance[r.id] is None or relevance[r.id] >= RELEVANCE_FLOOR]
-    if on_topic:
-        candidates = on_topic
-    # If nothing clears the floor the best available is still returned -- an
-    # imperfect resource beats an empty step -- but the score reflects the gap.
+    measured = [v for v in relevance.values() if v is not None]
+    if measured:
+        cutoff = max(measured) - RELEVANCE_MARGIN
+        # An imperfect resource still beats an empty step, so the best available
+        # survives even when nothing is a strong match.
+        candidates = [
+            r for r in candidates if relevance[r.id] is None or relevance[r.id] >= cutoff
+        ] or candidates
 
     scored: list[ScoredResource] = []
     for resource in candidates:
         raw = relevance[resource.id]
         components = {
-            # Rescaled so the usable range does its work: cosine 0.5 -> 0,
-            # 1.0 -> 1. The naive (c+1)/2 mapping compressed a 0.15 cosine gap
-            # into 0.07 of score, which let format and rating outvote relevance.
-            "cosine": 0.5 if raw is None else max(0.0, min(1.0, (raw - 0.5) * 2.0)),
+            # Scored by position within this candidate set, for the same reason
+            # the filter is relative: absolute cosine is not comparable across
+            # embedding models, but the gap inside one set is. The best match
+            # becomes 1.0 and RELEVANCE_MARGIN behind it becomes 0.0.
+            "cosine": _relative_score(raw, measured),
             "level": _level_match(resource.level, target_level),
             "format": _format_match(resource.format, prefs.format_pref),
             "cost": 1.0 if resource.cost == "free" else 0.25,

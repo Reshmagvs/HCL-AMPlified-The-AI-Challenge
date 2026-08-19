@@ -10,9 +10,10 @@ that block and to say so plainly when the answer is not in it.
 
 Two consequences worth stating explicitly. A question about a course that is not
 in this learner's path cannot be answered with an invented course, because no
-other course appears in the context. And with the provider unavailable the
-endpoint still answers -- from a deterministic summary of the same rows, marked
-`llm_degraded` -- rather than returning an error.
+other course appears in the context. And with no model configured at all -- the
+default -- the endpoint still gives a real answer: `core.answers` resolves the
+common questions (what next, how long, why this, how far along, what does it
+cost) directly from the same rows, marked `llm_degraded`.
 """
 
 from __future__ import annotations
@@ -23,6 +24,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlmodel import Session
 
+from app.core.answers import PlanFacts, answer as rule_based_answer
 from app.core.retrieval import catalog_index
 from app.core.skill_graph import load_graph
 from app.db import get_session
@@ -79,21 +81,50 @@ def _context_block(learner, items: list[PathItem], version: int) -> tuple[str, l
     return "\n".join(lines), citations
 
 
-def _deterministic_reply(learner, items: list[PathItem]) -> str:
-    """A factual summary used when no model is available."""
+def _facts(learner, items: list[PathItem]) -> PlanFacts:
+    """Everything the rule-based answerer is allowed to know, from stored rows."""
     graph = load_graph()
-    upcoming = [i for i in items if i.status != "done"][:3]
-    if not upcoming:
-        return "Every step in your path is complete. Generate a new path to keep going."
-    listed = "; ".join(
-        f"week {i.week_number}: {graph.require(i.skill_id).name if i.skill_id in graph else i.skill_id}"
-        for i in upcoming
-    )
-    return (
-        f"Running without a language model, so here is your plan data directly. "
-        f"Your next steps are {listed}. You have {learner.hours_per_week:g} hours a week "
-        f"budgeted, and the full path finishes in week "
-        f"{max((i.week_number for i in items), default=0)}."
+    catalog = catalog_index()
+    resources = [i for i in items if i.kind == "resource"]
+
+    def name_of(item: PathItem) -> str:
+        return graph.require(item.skill_id).name if item.skill_id in graph else item.skill_id
+
+    def described(item: PathItem) -> dict:
+        resource = catalog.get(item.course_id) if item.course_id else None
+        return {
+            "skill_id": item.skill_id,
+            "skill_name": name_of(item),
+            "week": item.week_number,
+            "title": resource.title if resource else None,
+            "url": resource.url if resource else None,
+            "status": item.status,
+            # Names, not ids: this chain is read aloud in an answer.
+            "chain": [
+                graph.require(step).name if step in graph else step
+                for step in (item.provenance.get("why_needed") or {}).get("path_to_goal") or []
+            ],
+        }
+
+    done = [i for i in resources if i.status == "done"]
+    hours_done = sum(i.est_hours for i in done)
+    goals = ", ".join(graph.require(g).name for g in learner.goal_node_ids if g in graph)
+
+    return PlanFacts(
+        goal=goals or learner.goal_text or "your goal",
+        hours_per_week=learner.hours_per_week,
+        finish_week=max((i.week_number for i in items), default=0),
+        total_steps=len(resources),
+        done_steps=len(done),
+        hours_done=round(hours_done, 1),
+        hours_remaining=round(sum(i.est_hours for i in resources) - hours_done, 1),
+        upcoming=[described(i) for i in resources if i.status != "done"][:3],
+        all_steps=[described(i) for i in resources],
+        paid_count=sum(
+            1
+            for i in resources
+            if i.course_id and catalog.get(i.course_id) and catalog[i.course_id].cost != "free"
+        ),
     )
 
 
@@ -121,9 +152,13 @@ def chat(
     context, citations = _context_block(learner, items, path.version if path else 0)
     provider = get_provider()
     degraded = True
-    reply = _deterministic_reply(learner, items)
+    reply = rule_based_answer(question, _facts(learner, items))
 
-    if provider.available():
+    # The offline provider is deliberately *not* used here. Its canned reply is
+    # a debug echo of the context block, whereas the rule-based answer above is
+    # drawn from the same rows and reads like an answer. A real model improves
+    # the phrasing; it does not improve the facts.
+    if provider.name != "mock" and provider.available():
         prompt = CHAT_GROUNDED.format(context=context, question=question)
         try:
             reply = call_with_schema(provider, prompt, ChatReply, temperature=0.3, max_tokens=600).reply

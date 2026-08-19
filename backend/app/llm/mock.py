@@ -7,16 +7,15 @@ prompt type with well-formed JSON in the same shape the real model returns.
 
 Two design choices make it useful rather than merely present:
 
-* **Embeddings are a hashing vectoriser, not noise.** Tokens (words plus
-  character trigrams) are hashed into ``embedding_dim`` buckets with a signed
-  count, then L2-normalised. Cosine similarity therefore tracks real lexical
-  overlap, so goal resolution against the skill nodes returns sensible matches
-  offline instead of arbitrary ones. Identical text always yields an identical
-  vector, which is what the determinism tests rely on.
+* **It answers every prompt type with valid JSON**, in the shape the real model
+  would return, so no caller has to special-case it.
 * **It never invents a resource.** The catalog-harvest prompt returns an empty
   list. A fabricated URL from the mock would be indistinguishable from a
   fabricated URL from the real model, and the whole catalog pipeline exists to
   make that impossible.
+
+Retrieval does not come through here at all: embeddings are local and
+deterministic regardless of provider (see ``core.embeddings``).
 """
 
 from __future__ import annotations
@@ -24,26 +23,14 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
-import math
 import re
 from typing import Any
 
-from app.config import get_settings
 from app.core.text_profile import extract_profile, next_question
 from app.llm import prompts
 from app.llm.base import LLMProvider
 
 logger = logging.getLogger(__name__)
-
-_TOKEN_RE = re.compile(r"[a-z0-9]+")
-
-
-def _tokens(text: str) -> list[str]:
-    """Words plus character trigrams, so near-misses still overlap."""
-    words = _TOKEN_RE.findall(text.lower())
-    grams = [w[i : i + 3] for w in words if len(w) > 3 for i in range(len(w) - 2)]
-    return words + grams
-
 
 def _stable_hash(text: str) -> int:
     return int.from_bytes(hashlib.sha256(text.encode("utf-8")).digest()[:8], "big")
@@ -54,33 +41,10 @@ class MockProvider(LLMProvider):
 
     name = "mock"
 
-    def __init__(self, dim: int | None = None) -> None:
-        self.dim = dim or get_settings().embedding_dim
-
     # -- capability ---------------------------------------------------------
     def available(self) -> bool:
         """Always reachable. ``/health`` reports the provider name separately."""
         return True
-
-    # -- embeddings ---------------------------------------------------------
-    def embed(self, text: str) -> list[float]:
-        """Signed hashing vectoriser, L2-normalised.
-
-        Word tokens carry more weight than trigrams so that an exact term match
-        dominates a coincidental substring match.
-        """
-        vector = [0.0] * self.dim
-        words = _TOKEN_RE.findall(text.lower())
-        for token in _tokens(text):
-            digest = _stable_hash(token)
-            index = digest % self.dim
-            sign = 1.0 if (digest >> 61) & 1 else -1.0
-            vector[index] += sign * (2.0 if token in words else 0.6)
-        norm = math.sqrt(sum(v * v for v in vector))
-        if norm == 0.0:
-            vector[0] = 1.0
-            return vector
-        return [v / norm for v in vector]
 
     # -- generation ---------------------------------------------------------
     def complete(self, prompt: str, *, temperature: float = 0.2, max_tokens: int = 2048) -> str:

@@ -82,9 +82,11 @@ export type Health = {
   version: string
   llm_available: boolean
   llm_provider: string
+  embedder: string
   catalog_size: number
   graph_nodes: number
   graph_tracks: number
+  question_bank: number
 }
 
 export type ProfileDraft = {
@@ -198,6 +200,8 @@ export type LearningPath = {
   goal_node_ids: string[]
   goal_names: string[]
   items: PathItem[]
+  /** week -> hours actually allocated that week, spill included */
+  week_load: Record<string, number>
   llm_degraded: boolean
 }
 

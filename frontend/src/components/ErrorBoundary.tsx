@@ -30,18 +30,18 @@ export default class ErrorBoundary extends Component<Props, State> {
 
     return (
       <div className="mx-auto max-w-2xl p-6">
-        <div className="card border-signal-bad/40 p-6" role="alert">
-          <p className="font-semibold text-signal-bad">This screen could not be rendered</p>
-          <p className="mt-1 text-sm text-mist-500">{error.message}</p>
-          <p className="mt-3 text-sm text-mist-500">
-            The most common cause is the API being unreachable mid-session. Check that the backend
-            is running, then reload.
+        <div className="card border-rust-500/35 bg-rust-100/50 p-7" role="alert">
+          <h2 className="text-base font-semibold text-rust-700">This screen could not be drawn</h2>
+          <p className="mt-1.5 text-sm text-ink-500">{error.message}</p>
+          <p className="mt-3 text-sm text-ink-500">
+            Usually this means the app server stopped while you were using it. Nothing you have done
+            is lost — check it is running, then reload.
           </p>
           <div className="mt-4 flex gap-3">
             <button className="btn-primary" onClick={() => this.setState({ error: null })}>
               Try again
             </button>
-            <button className="btn-ghost" onClick={() => window.location.reload()}>
+            <button className="btn-secondary" onClick={() => window.location.reload()}>
               Reload
             </button>
           </div>

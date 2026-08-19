@@ -14,10 +14,14 @@ and any id not present verbatim in the candidate list is rejected outright. The
 model can only ever pick something real. With no provider at all, the top cosine
 hit is used, which is less nuanced but always valid.
 
-The same retrieve-then-threshold approach maps a learner's claimed prior
-knowledge ("I know Python and git") onto node ids, except that no model is
-involved and the resulting mastery is capped at 0.4 -- a claim shortens the
-diagnostic, it never replaces it.
+The same retrieval maps a learner's claimed prior knowledge ("I know Python and
+git") onto node ids, except that no model is involved and the resulting mastery
+is capped at 0.4 -- a claim shortens the diagnostic, it never replaces it. That
+cap is why no confidence threshold is applied to the match; see
+``match_claimed_skills``.
+
+Embeddings are computed locally (``core.embeddings``), so the retrieval half of
+this works with no API key, no quota and no network.
 """
 
 from __future__ import annotations
@@ -30,6 +34,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from app.core import retrieval
+from app.core.embeddings import embed_one
 from app.core.skill_graph import SkillGraph, load_graph
 from app.llm import get_provider
 from app.llm.base import ProviderUnavailable, SchemaViolation, call_with_schema
@@ -39,8 +44,7 @@ logger = logging.getLogger(__name__)
 
 CANDIDATE_COUNT = 8
 MAX_GOAL_NODES = 3
-CLAIM_MATCH_FLOOR = 0.20
-CLAIM_MATCH_MARGIN = 1.35
+CLAIM_CANDIDATES = 3
 _WORD_RE = re.compile(r"[a-z0-9+#.]+")
 
 
@@ -64,11 +68,11 @@ def _lexical_scores(graph: SkillGraph, text: str) -> dict[str, float]:
 
 
 def embed_query(text: str) -> np.ndarray | None:
-    """Embed one string with the active provider, or None if it is unavailable."""
+    """Embed one string locally. Never touches the network."""
     try:
-        return np.asarray(get_provider().embed(text), dtype=np.float32)
-    except (ProviderUnavailable, ValueError) as exc:
-        logger.info("query embedding unavailable: %s", str(exc)[:120])
+        return embed_one(text)
+    except Exception as exc:  # noqa: BLE001 -- a broken model must not 500 intake
+        logger.warning("local embedding failed: %s", str(exc)[:160])
         return None
 
 
@@ -145,27 +149,26 @@ def resolve_goal(goal_text: str) -> tuple[list[str], list[dict[str, Any]], bool]
     return (chosen or fallback), candidates, not chosen
 
 
-def _is_unambiguous(best: float, runner_up: float) -> bool:
-    """Accept a claim only when one node is clearly ahead of the next.
-
-    An absolute cosine threshold does not transfer between providers -- the mock
-    hashing vectoriser and Gemini put "Python Basics" at 0.47 and 0.83 against
-    the same node. A *relative* margin does transfer: if the best match is not
-    comfortably ahead of the runner-up, the claim was too vague to attach to any
-    single skill, and dropping it is safer than seeding mastery for a skill the
-    learner never mentioned.
-    """
-    if best < CLAIM_MATCH_FLOOR:
-        return False
-    return runner_up <= 0.0 or best / runner_up >= CLAIM_MATCH_MARGIN
-
-
 def match_claimed_skills(claims: list[str]) -> dict[str, float]:
     """Map plain-English claims onto node ids, with the similarity that matched.
 
-    Deliberately strict: an unrecognised claim is dropped rather than attached to
-    the nearest node, because a wrong self-report seeds mastery for a skill the
-    learner never mentioned.
+    This takes the nearest node for each claim, without a confidence threshold,
+    and that is a deliberate reversal of an earlier design.
+
+    Two attempts at a threshold were made -- an absolute cosine cut-off and then
+    a within-set separation test -- and both misfired in *both* directions
+    across embedding models: "Docker" was rejected while "stuff" was accepted.
+    The rule was tuning noise dressed up as rigour.
+
+    What makes the threshold unnecessary is the 0.4 cap. A matched claim seeds
+    mastery below the 0.7 mastery threshold, so it can never remove a skill from
+    the path; the worst a wrong match can do is nudge the order in which the
+    diagnostic asks questions. Set against that, dropping a *correct* claim
+    throws away real signal about the learner.
+
+    So the safety property is the cap, not a filter -- and the matches are
+    returned to the caller so the interface can show the learner exactly what
+    was recorded, which is a better correction mechanism than a hidden cut-off.
     """
     graph = load_graph()
     if not graph or not claims:
@@ -178,23 +181,22 @@ def match_claimed_skills(claims: list[str]) -> dict[str, float]:
         text = claim.strip()
         if len(text) < 2:
             continue
-        best_id, best_score, runner_up = None, 0.0, 0.0
+        best_id: str | None = None
+        best_score = 0.0
 
         query = embed_query(text) if matrices["skills"] is not None else None
         if query is not None and query.shape[0] == matrices["skills"].shape[1]:
-            hits = retrieval.cosine_search(query, matrices["skills"], 2)
+            hits = retrieval.cosine_search(query, matrices["skills"], CLAIM_CANDIDATES)
             if hits:
                 best_id, best_score = matrices["skill_ids"][hits[0][0]], hits[0][1]
-                runner_up = hits[1][1] if len(hits) > 1 else 0.0
         else:
             lexical = _lexical_scores(graph, text)
             ordered = sorted(lexical.items(), key=lambda kv: (-kv[1], kv[0]))
             if ordered:
                 best_id, best_score = ordered[0]
-                runner_up = ordered[1][1] if len(ordered) > 1 else 0.0
 
-        if best_id and _is_unambiguous(best_score, runner_up):
+        if best_id:
             matched[best_id] = max(matched.get(best_id, 0.0), round(float(best_score), 4))
         else:
-            logger.debug("claim %r was too ambiguous to match (best %.3f)", text, best_score)
+            logger.debug("claim %r matched no skill at all", text)
     return matched

@@ -29,16 +29,18 @@ logger = logging.getLogger(__name__)
 async def lifespan(_app: FastAPI):
     """Create tables and warm the read-only data layers before serving."""
     init_db()
-    from app.core import retrieval, skill_graph
+    from app.core import questions, retrieval, skill_graph
+    from app.core.embeddings import get_embedder
+    from app.llm import get_provider
 
     graph = skill_graph.load_graph()
     catalog = retrieval.load_catalog()
     retrieval.load_matrices()
+    bank = questions.load_questions()
     logger.info(
-        "lodestar ready: %d skill nodes, %d catalog entries, provider=%s",
-        len(graph.nodes),
-        len(catalog),
-        settings.llm_provider,
+        "lodestar ready: %d skills, %d resources, %d questions, embedder=%s, provider=%s",
+        len(graph.nodes), len(catalog), len(bank),
+        get_embedder().name, get_provider().name,
     )
     yield
 
@@ -79,7 +81,8 @@ def health() -> HealthResponse:
 
     Reads only in-memory state -- no database round trip, no LLM call.
     """
-    from app.core import retrieval, skill_graph
+    from app.core import questions, retrieval, skill_graph
+    from app.core.embeddings import get_embedder
     from app.llm import get_provider
 
     graph = skill_graph.load_graph()
@@ -89,10 +92,12 @@ def health() -> HealthResponse:
         status="ok",
         version=__version__,
         llm_available=provider.available(),
-        llm_provider=settings.llm_provider,
+        llm_provider=provider.name,
+        embedder=get_embedder().name,
         catalog_size=len(catalog),
         graph_nodes=len(graph.nodes),
         graph_tracks=len(graph.tracks),
+        question_bank=len(questions.load_questions()),
     )
 
 

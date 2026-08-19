@@ -28,6 +28,7 @@ dist/
 # Build / harvest intermediates
 backend/data/courses_raw.json
 backend/data/verify_report.json
+backend/data/link_audit.json
 backend/.install_hash
 
 # OS / editor

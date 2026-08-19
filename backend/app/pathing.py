@@ -15,7 +15,7 @@ import logging
 from sqlmodel import Session, select
 
 from app.core.mastery import MasteryTable
-from app.core.planner import Plan, build_plan, preference_from
+from app.core.planner import Plan, build_plan, preference_from, week_allocations
 from app.core.retrieval import catalog_index
 from app.core.skill_graph import load_graph
 from app.models import Event, Learner, LearningPath, PathItem
@@ -163,7 +163,7 @@ def to_response(
             learner_id=learner.id, path_id=None, version=0, status="none",
             total_hours=0.0, finish_week=0, hours_per_week=learner.hours_per_week,
             goal_node_ids=list(learner.goal_node_ids), goal_names=goal_names,
-            items=[], llm_degraded=degraded,
+            items=[], week_load={}, llm_degraded=degraded,
         )
 
     items: list[PathItemOut] = []
@@ -203,5 +203,8 @@ def to_response(
         goal_node_ids=list(learner.goal_node_ids),
         goal_names=goal_names,
         items=items,
+        week_load=week_allocations(
+            [(i.week_number, i.est_hours) for i in items], learner.hours_per_week
+        ),
         llm_degraded=degraded or path.llm_degraded,
     )

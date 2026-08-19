@@ -1,12 +1,14 @@
 /**
- * Diagnostic: one question at a time, with the confidence meter visible.
+ * Step 2 — the placement check.
  *
- * Showing confidence rising is what makes the adaptivity legible — the learner
- * can see that six questions were enough because each one was chosen to resolve
- * the most uncertainty, not because the quiz happened to be short.
+ * Two things have to be legible here or the screen feels like an obstacle:
+ * *why* there is a quiz at all, and *when it will end*. So the intro explains
+ * the trade in one line, the ring shows questions asked against the maximum, and
+ * the confidence bar shows the thing that actually decides when to stop.
  *
- * "I don't know" is styled as a real option, not a giveaway. Guessing pollutes
- * the measurement, so the interface must not make abstaining feel like failure.
+ * "I don't know" is styled as a genuine option, not a giveaway. Guessing
+ * pollutes the measurement, so the interface must not make abstaining feel like
+ * failure.
  */
 
 import { useState } from 'react'
@@ -15,14 +17,16 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { queryState } from '../lib/queryState'
 import { useSession } from '../lib/store'
-import { DegradedBanner, ErrorPanel, LoadingPanel } from '../components/states'
+import { Callout, DegradedBanner, ErrorPanel, Hint, LoadingPanel } from '../components/states'
 
 export default function Diagnostic() {
   const learnerId = useSession((s) => s.learnerId)!
+  const seededSkills = useSession((s) => s.seededSkills)
+  const goalNames = useSession((s) => s.goalNames)
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState<number | null>(null)
-  const [feedback, setFeedback] = useState<{ correct: boolean; skill: string } | null>(null)
+  const [feedback, setFeedback] = useState<{ correct: boolean } | null>(null)
 
   const question = useQuery({
     queryKey: ['diagnostic', learnerId],
@@ -33,12 +37,12 @@ export default function Diagnostic() {
     mutationFn: (input: { index: number | null; dontKnow: boolean }) =>
       api.answerQuestion(question.data!.quiz_item_id!, input.index, input.dontKnow),
     onSuccess: (result) => {
-      setFeedback({ correct: result.correct, skill: result.skill_id })
+      setFeedback({ correct: result.correct })
       setSelected(null)
       setTimeout(() => {
         setFeedback(null)
         void queryClient.invalidateQueries({ queryKey: ['diagnostic', learnerId] })
-      }, 900)
+      }, 850)
     },
   })
 
@@ -55,42 +59,45 @@ export default function Diagnostic() {
     return state.failure ? (
       <ErrorPanel error={state.failure} onRetry={state.retry} />
     ) : (
-      <LoadingPanel label="Choosing the most informative question" rows={4} />
+      <LoadingPanel label="Choosing the most useful question" rows={4} />
     )
   }
 
   const data = state.data
-  const progress = Math.min(1, data.asked / data.max_questions)
+  const seeded = Object.keys(seededSkills)
 
   if (data.done) {
     return (
       <div className="mx-auto max-w-2xl">
-        <header className="mb-4">
-          <p className="label">Step 2 of 4 — complete</p>
-          <h1 className="text-2xl font-bold tracking-tight">We know enough to place you.</h1>
+        <header className="mb-5">
+          <p className="label">Step 2 of 4 — done</p>
+          <h1 className="mt-1 text-2xl">We know enough to place you.</h1>
         </header>
-        <div className="card space-y-4 p-6">
+
+        <div className="card space-y-5 p-7">
           <div className="flex flex-wrap items-center gap-6">
-            <Ring value={data.confidence} label="confidence" />
-            <div className="text-sm text-mist-500">
+            <Ring value={data.confidence} caption={`${Math.round(data.confidence * 100)}%`} />
+            <div className="max-w-sm text-sm leading-relaxed text-ink-500">
               <p>
-                <span className="font-mono text-mist-100">{data.asked}</span> question
-                {data.asked === 1 ? '' : 's'} asked, chosen by how much uncertainty each one
-                resolved.
+                <strong className="font-semibold text-ink-900">{data.asked}</strong>{' '}
+                question{data.asked === 1 ? '' : 's'} was enough. Each one was chosen to settle the
+                most uncertainty, so a few go a long way.
               </p>
-              <p className="mt-1">
-                Your measured level replaces guesswork: skills you demonstrated are dropped from the
-                path entirely.
+              <p className="mt-2">
+                Anything you demonstrated is dropped from the plan entirely — you will not be sent
+                to relearn it.
               </p>
             </div>
           </div>
+
           <button
             className="btn-primary w-full"
             onClick={() => generate.mutate()}
             disabled={generate.isPending}
           >
-            {generate.isPending ? 'Sequencing your path…' : 'Generate my learning path'}
+            {generate.isPending ? 'Working out the order…' : 'Show me my plan →'}
           </button>
+
           {generate.isError && <ErrorPanel error={generate.error} onRetry={() => generate.mutate()} />}
         </div>
       </div>
@@ -98,42 +105,61 @@ export default function Diagnostic() {
   }
 
   const locked = answer.isPending || feedback !== null
+  const progress = Math.min(1, data.asked / Math.max(1, data.max_questions))
 
   return (
     <div className="mx-auto max-w-2xl">
-      <header className="mb-4">
+      <header className="mb-5">
         <p className="label">Step 2 of 4</p>
-        <h1 className="text-2xl font-bold tracking-tight">Let us measure, not assume.</h1>
+        <h1 className="mt-1 text-2xl">A few questions, so we can start in the right place.</h1>
+        <p className="mt-2 max-w-xl text-sm leading-relaxed text-ink-500">
+          Answering honestly makes your plan shorter, not longer: everything you show you already
+          know is removed from it.
+        </p>
       </header>
+
+      {data.asked === 0 && seeded.length > 0 && (
+        <div className="mb-4">
+          <Callout tone="accent" title="Noted from what you told us">
+            {goalNames.length > 0 && <>Aiming at {goalNames.join(' and ')}. </>}
+            We recorded {seeded.length} skill{seeded.length === 1 ? '' : 's'} you mentioned as a
+            starting estimate. That never removes anything from your plan on its own — these
+            questions are what confirm it.
+          </Callout>
+        </div>
+      )}
 
       <DegradedBanner show={data.llm_degraded} what="question wording" />
 
-      <div className="card mt-3 p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="card mt-3 p-7">
+        <div className="flex flex-wrap items-center justify-between gap-5">
           <div className="flex items-center gap-4">
-            <Ring value={progress} label={`${data.asked}/${data.max_questions}`} />
+            <Ring value={progress} caption={`${data.asked}/${data.max_questions}`} />
             <div>
-              <p className="label">Measuring</p>
-              <p className="text-sm font-semibold">{data.skill_name}</p>
+              <p className="label">Checking</p>
+              <p className="text-[15px] font-semibold text-ink-900">{data.skill_name}</p>
             </div>
           </div>
-          <div className="min-w-[140px]">
-            <p className="label">Confidence</p>
-            <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-ink-700">
+          <div className="min-w-[150px]">
+            <div className="flex items-baseline justify-between">
+              <p className="label">Confidence</p>
+              <span className="font-mono text-[11px] text-ink-400">
+                {Math.round(data.confidence * 100)}%
+              </span>
+            </div>
+            <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-paper-300">
               <div
-                className="h-full rounded-full bg-ember-500 transition-[width] duration-500"
-                style={{ width: `${Math.round(data.confidence * 100)}%` }}
+                className="h-full rounded-full bg-clay-500 transition-[width] duration-500"
+                style={{ width: `${Math.max(3, Math.round(data.confidence * 100))}%` }}
               />
             </div>
-            <p className="mt-1 font-mono text-xs text-mist-500">
-              {Math.round(data.confidence * 100)}%
-            </p>
+            <p className="mt-1 text-[11px] text-ink-400">Stops early once this is high enough</p>
           </div>
         </div>
 
-        <div className="edge-rule my-5" />
+        <div className="rule my-6" />
 
-        <p className="text-base font-medium leading-relaxed">{data.question}</p>
+        <p className="text-[16px] font-medium leading-relaxed text-ink-900">{data.question}</p>
 
         <div className="mt-5 space-y-2">
           {data.options.map((option, index) => (
@@ -142,17 +168,24 @@ export default function Diagnostic() {
               disabled={locked}
               onClick={() => setSelected(index)}
               className={[
-                'w-full rounded-lg border px-4 py-3 text-left text-sm transition-colors',
+                'flex w-full items-start gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors',
                 selected === index
-                  ? 'border-ember-500 bg-ember-500/10 text-mist-100'
-                  : 'border-ink-600 hover:border-ink-500',
+                  ? 'border-clay-500 bg-clay-50 text-ink-900'
+                  : 'border-paper-400 bg-paper-50 hover:border-paper-500 hover:bg-paper-200',
                 locked ? 'opacity-60' : '',
               ].join(' ')}
             >
-              <span className="mr-2 font-mono text-xs text-mist-500">
+              <span
+                className={[
+                  'mt-px flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold',
+                  selected === index
+                    ? 'border-clay-500 bg-clay-500 text-paper-50'
+                    : 'border-paper-500 text-ink-400',
+                ].join(' ')}
+              >
                 {String.fromCharCode(65 + index)}
               </span>
-              {option}
+              <span>{option}</span>
             </button>
           ))}
         </div>
@@ -160,17 +193,17 @@ export default function Diagnostic() {
         {feedback && (
           <p
             className={`mt-4 text-sm font-medium ${
-              feedback.correct ? 'text-signal-ok' : 'text-signal-warn'
+              feedback.correct ? 'text-sage-700' : 'text-amber-700'
             }`}
             role="status"
           >
             {feedback.correct
-              ? 'Correct — that skill leaves your path, and its prerequisites gain weak evidence too.'
-              : 'Noted. That skill stays in your path, placed where it belongs.'}
+              ? 'Correct — that one leaves your plan, and its groundwork gets partial credit too.'
+              : 'Noted. That one stays in your plan, placed where it belongs.'}
           </p>
         )}
 
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
             className="btn-primary"
             disabled={selected === null || locked}
@@ -179,13 +212,19 @@ export default function Diagnostic() {
             Submit answer
           </button>
           <button
-            className="btn-ghost"
+            className="btn-secondary"
             disabled={locked}
             onClick={() => answer.mutate({ index: null, dontKnow: true })}
-            title="A clean signal, not a failure. Guessing would pollute the measurement."
           >
             I don&apos;t know
           </button>
+        </div>
+
+        <div className="mt-3">
+          <Hint>
+            &ldquo;I don&apos;t know&rdquo; is a real answer here. A lucky guess would put something
+            in the wrong place in your plan.
+          </Hint>
         </div>
 
         {answer.isError && (
@@ -198,28 +237,43 @@ export default function Diagnostic() {
   )
 }
 
-export function Ring({ value, label }: { value: number; label: string }) {
-  const radius = 26
+export function Ring({
+  value,
+  caption,
+  size = 68,
+}: {
+  value: number
+  caption: string
+  size?: number
+}) {
+  const stroke = size >= 60 ? 6 : 5
+  const radius = size / 2 - stroke
   const circumference = 2 * Math.PI * radius
   const filled = Math.max(0, Math.min(1, value))
 
   return (
-    <div className="relative h-[68px] w-[68px] shrink-0">
-      <svg viewBox="0 0 68 68" className="h-full w-full -rotate-90">
-        <circle cx="34" cy="34" r={radius} className="fill-none stroke-ink-700" strokeWidth="6" />
+    <div className="relative shrink-0" style={{ height: size, width: size }}>
+      <svg viewBox={`0 0 ${size} ${size}`} className="h-full w-full -rotate-90">
         <circle
-          cx="34"
-          cy="34"
+          cx={size / 2}
+          cy={size / 2}
           r={radius}
-          className="fill-none stroke-ember-500 transition-[stroke-dashoffset] duration-500"
-          strokeWidth="6"
+          className="fill-none stroke-paper-300"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          className="fill-none stroke-clay-500 transition-[stroke-dashoffset] duration-500"
+          strokeWidth={stroke}
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - filled)}
         />
       </svg>
-      <span className="absolute inset-0 flex items-center justify-center font-mono text-[11px] text-mist-300">
-        {label}
+      <span className="absolute inset-0 flex items-center justify-center font-mono text-[11px] font-medium text-ink-700">
+        {caption}
       </span>
     </div>
   )

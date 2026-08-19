@@ -14,23 +14,27 @@ def test_health_returns_ok(client) -> None:
         "version",
         "llm_available",
         "llm_provider",
+        "embedder",
         "catalog_size",
         "graph_nodes",
         "graph_tracks",
+        "question_bank",
     }
     assert isinstance(body["catalog_size"], int)
     assert isinstance(body["graph_nodes"], int)
+    assert body["question_bank"] > 100, "the diagnostic bank should ship populated"
 
 
 def test_health_is_fast_and_makes_no_model_call(client, monkeypatch) -> None:
-    """Under 50ms, and any attempt to reach the provider fails the test."""
+    """Under 50ms, and any attempt to reach the provider or embedder fails."""
+    from app.core import embeddings
     from app.llm.mock import MockProvider
 
     def _forbidden(*_args, **_kwargs):
-        raise AssertionError("/health must not call the LLM")
+        raise AssertionError("/health must not call the model or the embedder")
 
     monkeypatch.setattr(MockProvider, "complete", _forbidden)
-    monkeypatch.setattr(MockProvider, "embed", _forbidden)
+    monkeypatch.setattr(embeddings.HashingEmbedder, "embed_batch", _forbidden)
 
     client.get("/health")  # warm any lazy import
     durations = []

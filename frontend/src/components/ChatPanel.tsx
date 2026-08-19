@@ -1,23 +1,34 @@
 /**
- * A persistent assistant grounded strictly in this learner's own path.
+ * A persistent assistant, answering only from this learner's own plan.
  *
- * The citations under each answer are the point: they are resolved server-side
- * from the resources actually bound to this learner's path, so a claim about a
- * course is always accompanied by the real, working link it came from.
+ * The suggested questions are not decoration: an empty chat box with a blinking
+ * cursor gets ignored, whereas three concrete questions tell a visitor in one
+ * glance what this thing is for and what it can answer.
+ *
+ * The citations under each answer are the substance — they resolve server-side
+ * to the resources actually bound to this learner's plan, so a claim about a
+ * course always arrives with the real, working link it came from.
  */
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { api, type ChatReply } from '../lib/api'
 import { useSession } from '../lib/store'
 
 type Turn = { role: 'learner' | 'assistant'; text: string; reply?: ChatReply }
 
+const SUGGESTIONS = [
+  'What should I do first?',
+  'Why is this in my plan?',
+  'How many hours are left?',
+]
+
 export default function ChatPanel() {
   const learnerId = useSession((s) => s.learnerId)
   const [open, setOpen] = useState(false)
   const [draft, setDraft] = useState('')
   const [turns, setTurns] = useState<Turn[]>([])
+  const endRef = useRef<HTMLDivElement>(null)
 
   const ask = useMutation({
     mutationFn: (message: string) => api.chat(learnerId!, message),
@@ -25,40 +36,50 @@ export default function ChatPanel() {
     onError: (error) =>
       setTurns((t) => [
         ...t,
-        { role: 'assistant', text: error instanceof Error ? error.message : 'Something went wrong.' },
+        {
+          role: 'assistant',
+          text:
+            error instanceof Error
+              ? `I could not reach the plan just now — ${error.message}`
+              : 'Something went wrong.',
+        },
       ]),
   })
 
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [turns.length, ask.isPending])
+
   if (learnerId === null) return null
 
-  function submit() {
-    const message = draft.trim()
-    if (!message || ask.isPending) return
-    setTurns((t) => [...t, { role: 'learner', text: message }])
+  function submit(message: string) {
+    const text = message.trim()
+    if (!text || ask.isPending) return
+    setTurns((t) => [...t, { role: 'learner', text }])
     setDraft('')
-    ask.mutate(message)
+    ask.mutate(text)
   }
 
   if (!open) {
     return (
       <button
-        className="btn-primary fixed bottom-5 right-5 z-30 shadow-lg shadow-black/40"
+        className="btn-primary fixed bottom-5 right-5 z-30 shadow-lift"
         onClick={() => setOpen(true)}
       >
-        Ask about my path
+        Ask about my plan
       </button>
     )
   }
 
   return (
-    <aside className="fixed bottom-4 right-4 z-30 flex max-h-[70vh] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-ink-700 bg-ink-900 shadow-2xl shadow-black/50">
-      <header className="flex items-center justify-between border-b border-ink-700 px-4 py-2.5">
+    <aside className="fixed bottom-4 right-4 z-30 flex max-h-[72vh] w-[min(390px,calc(100vw-2rem))] flex-col overflow-hidden rounded-xl border border-paper-400 bg-paper-50 shadow-lift">
+      <header className="flex items-center justify-between border-b border-paper-400 bg-paper-200 px-4 py-3">
         <div>
-          <p className="text-sm font-semibold">Study assistant</p>
-          <p className="text-[11px] text-mist-500">Answers only from your own plan</p>
+          <p className="text-sm font-semibold text-ink-900">Ask about your plan</p>
+          <p className="text-[11px] text-ink-400">Answers come only from your own plan</p>
         </div>
         <button
-          className="text-mist-500 hover:text-mist-100"
+          className="btn-quiet px-2 py-1 text-base leading-none"
           onClick={() => setOpen(false)}
           aria-label="Close"
         >
@@ -68,17 +89,31 @@ export default function ChatPanel() {
 
       <div className="flex-1 space-y-3 overflow-y-auto p-4">
         {turns.length === 0 && (
-          <p className="text-sm text-mist-500">
-            Try “what should I do first?”, “why is linear algebra in my path?”, or “how many hours
-            are left?”
-          </p>
+          <div className="space-y-2">
+            <p className="text-[13px] leading-relaxed text-ink-500">
+              I can only see your goal, your plan and your progress — so I will say so plainly if
+              you ask something outside that.
+            </p>
+            {SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                className="block w-full rounded-lg border border-paper-400 bg-paper-100 px-3 py-2 text-left text-[13px] text-ink-700 hover:border-clay-300 hover:text-clay-700"
+                onClick={() => submit(suggestion)}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
         )}
+
         {turns.map((turn, index) => (
           <div key={index} className={turn.role === 'learner' ? 'text-right' : ''}>
             <div
               className={[
-                'inline-block max-w-[92%] rounded-xl px-3 py-2 text-left text-sm leading-relaxed',
-                turn.role === 'learner' ? 'bg-ember-500 text-ink-950' : 'bg-ink-800',
+                'inline-block max-w-[92%] rounded-xl px-3 py-2 text-left text-[13px] leading-relaxed',
+                turn.role === 'learner'
+                  ? 'bg-clay-500 text-paper-50'
+                  : 'border border-paper-400 bg-paper-200 text-ink-700',
               ].join(' ')}
             >
               {turn.text}
@@ -88,7 +123,7 @@ export default function ChatPanel() {
                 {turn.reply.citations.slice(0, 3).map((citation) => (
                   <li key={citation.url}>
                     <a
-                      className="break-words text-xs text-ember-400 underline-offset-2 hover:underline"
+                      className="break-words text-[12px] text-clay-600 underline decoration-clay-300 underline-offset-2 hover:decoration-clay-600"
                       href={citation.url}
                       target="_blank"
                       rel="noreferrer noopener"
@@ -101,19 +136,20 @@ export default function ChatPanel() {
             )}
           </div>
         ))}
-        {ask.isPending && <p className="text-sm text-mist-500">Thinking…</p>}
+        {ask.isPending && <p className="text-[13px] text-ink-400">Looking at your plan…</p>}
+        <div ref={endRef} />
       </div>
 
       <form
-        className="flex gap-2 border-t border-ink-700 p-3"
+        className="flex gap-2 border-t border-paper-400 p-3"
         onSubmit={(event) => {
           event.preventDefault()
-          submit()
+          submit(draft)
         }}
       >
         <input
-          className="min-w-0 flex-1 rounded-lg border border-ink-600 bg-ink-950 px-3 py-2 text-sm placeholder:text-mist-500/70"
-          placeholder="Ask about your path…"
+          className="field flex-1 py-2"
+          placeholder="Ask a question…"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           aria-label="Question"

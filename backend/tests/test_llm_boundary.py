@@ -113,33 +113,10 @@ def test_provider_unavailable_propagates_without_retrying() -> None:
 
 # --------------------------------------------------------------------------- #
 # The mock is a real implementation, not a stub
+#
+# Embeddings are not tested here: they are no longer a provider concern at all.
+# See test_embeddings.py.
 # --------------------------------------------------------------------------- #
-def test_mock_embeddings_are_deterministic_and_normalised() -> None:
-    provider = MockProvider()
-    first = provider.embed("gradient descent")
-    assert first == provider.embed("gradient descent")
-    assert abs(sum(v * v for v in first) ** 0.5 - 1.0) < 1e-6
-    assert len(first) == provider.dim
-
-
-def test_mock_embeddings_track_lexical_similarity() -> None:
-    """Offline goal resolution has to return sensible nodes, not noise."""
-    provider = MockProvider()
-
-    def cosine(a: str, b: str) -> float:
-        va, vb = provider.embed(a), provider.embed(b)
-        return sum(x * y for x, y in zip(va, vb, strict=True))
-
-    related = cosine("machine learning engineer", "machine learning fundamentals")
-    unrelated = cosine("machine learning engineer", "responsive css layout")
-    assert related > unrelated + 0.1
-
-
-def test_mock_embeds_empty_text_without_dividing_by_zero() -> None:
-    vector = MockProvider().embed("")
-    assert abs(sum(v * v for v in vector) ** 0.5 - 1.0) < 1e-6
-
-
 @pytest.mark.parametrize(
     ("marker_prompt", "expected_key"),
     [

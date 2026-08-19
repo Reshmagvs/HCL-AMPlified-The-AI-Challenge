@@ -97,13 +97,14 @@ def test_embedding_matrices_match_the_data_and_contain_no_nan(catalog, graph) ->
         assert np.abs(norms - 1.0).max() < 1e-4, f"{name} embeddings are not L2-normalised"
 
 
-def test_matrices_exist_for_the_active_provider() -> None:
-    """A clone with no API key must not fall back to comparing noise."""
+def test_matrices_ship_for_the_active_embedder_and_the_fallback() -> None:
+    """A clone with no internet must not fall back to comparing noise."""
+    from app.core.embeddings import get_embedder
     from app.core.retrieval import matrix_path
 
-    for provider in ("gemini", "mock"):
+    for embedder in {get_embedder().name, "hashing"}:
         for kind in ("catalog", "skill"):
-            assert matrix_path(kind, provider).exists(), f"{kind}/{provider} matrix is missing"
+            assert matrix_path(kind, embedder).exists(), f"{kind}/{embedder} matrix is missing"
 
 
 # --------------------------------------------------------------------------- #

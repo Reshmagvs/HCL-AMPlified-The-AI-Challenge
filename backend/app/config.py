@@ -27,12 +27,18 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # --- LLM ---------------------------------------------------------------
+    # --- Embeddings (local, no API key) ------------------------------------
+    # "auto" loads the local transformer when available and falls back to the
+    # offline hashing vectoriser; "hashing" forces the fallback.
+    embedder: str = "auto"
+
+    # --- Text generation ----------------------------------------------------
     llm_provider: str = "mock"
+    ollama_host: str = "http://127.0.0.1:11434"
+    ollama_model: str = "llama3.2:1b"
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash-lite"
     gemini_embed_model: str = "gemini-embedding-2"
-    embedding_dim: int = 768
 
     # --- Storage -----------------------------------------------------------
     database_url: str = f"sqlite:///{(REPO_DIR / 'lodestar.db').as_posix()}"
@@ -43,7 +49,7 @@ class Settings(BaseSettings):
     # --- Domain tuning -----------------------------------------------------
     mastery_threshold: float = 0.7
     self_report_cap: float = 0.4
-    diagnostic_max_questions: int = 10
+    diagnostic_max_questions: int = 8
     diagnostic_confidence_target: float = 0.75
 
     # --- Ops ---------------------------------------------------------------

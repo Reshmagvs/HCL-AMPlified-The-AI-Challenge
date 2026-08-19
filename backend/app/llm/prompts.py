@@ -254,3 +254,31 @@ EMPHASIS_DOCS = """This pass should favour official documentation, reference
 guides and first-party tutorials from the maintainers of the technology itself
 (python.org, MDN, scikit-learn, PyTorch, React, Docker, Kubernetes, PostgreSQL,
 Terraform, OWASP, Git). These are the longest-lived URLs on the web."""
+
+
+QUIZ_BATCH = """{mark}
+Write one multiple-choice question for each skill listed below. These become a
+fixed question bank shipped with the product, so quality matters more than speed.
+
+SKILLS:
+{skill_block}
+
+For every skill:
+- Test understanding or application, never trivia or vocabulary recall. A learner
+  who has genuinely used the skill should answer correctly; one who has only read
+  about it should not.
+- Exactly 4 options, exactly one correct.
+- The three wrong options must be plausible to someone with a partial grasp. A
+  wrong answer should tell us something, not just be obviously silly.
+- Question under 45 words, each option under 20 words.
+- Vary which position holds the correct answer across the batch.
+- Do not include "I don't know" as an option; the interface adds it separately.
+
+Return JSON with one key per skill id given above:
+{{"by_skill": {{
+  "<skill.id>": {{"question": "<text>", "options": ["<a>","<b>","<c>","<d>"],
+                  "answer_index": <0-3>, "explanation": "<one sentence>"}}
+}}}}
+
+Output JSON only, no prose, no markdown fences.
+""".replace("{mark}", MARK_QUIZ)

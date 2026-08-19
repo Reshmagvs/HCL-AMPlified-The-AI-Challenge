@@ -20,11 +20,15 @@ type SessionState = {
   transcript: ChatTurn[]
   profile: ProfileDraft
   lastDiffVersion: number | null
+  /** Skills recognised from what the learner said, recorded at commit time. */
+  seededSkills: Record<string, number>
+  goalNames: string[]
 
   setLearner: (id: number) => void
   setSession: (id: string) => void
   addTurn: (turn: ChatTurn) => void
   setProfile: (profile: ProfileDraft) => void
+  setSeeded: (seeded: Record<string, number>, goalNames: string[]) => void
   noteDiff: (version: number | null) => void
   reset: () => void
 }
@@ -35,6 +39,8 @@ const EMPTY = {
   transcript: [] as ChatTurn[],
   profile: {} as ProfileDraft,
   lastDiffVersion: null,
+  seededSkills: {} as Record<string, number>,
+  goalNames: [] as string[],
 }
 
 export const useSession = create<SessionState>()(
@@ -45,6 +51,7 @@ export const useSession = create<SessionState>()(
       setSession: (sessionId) => set({ sessionId }),
       addTurn: (turn) => set((state) => ({ transcript: [...state.transcript, turn] })),
       setProfile: (profile) => set({ profile }),
+      setSeeded: (seededSkills, goalNames) => set({ seededSkills, goalNames }),
       noteDiff: (lastDiffVersion) => set({ lastDiffVersion }),
       reset: () => set({ ...EMPTY }),
     }),
@@ -55,13 +62,13 @@ export const useSession = create<SessionState>()(
 /** Fields shown on the intake profile card, in the order they fill in. */
 export const PROFILE_FIELDS: { key: keyof ProfileDraft; label: string }[] = [
   { key: 'goal_text', label: 'Goal' },
-  { key: 'hours_per_week', label: 'Hours / week' },
+  { key: 'hours_per_week', label: 'Hours a week' },
   { key: 'experience_level', label: 'Experience' },
   { key: 'completed_skills', label: 'Already knows' },
-  { key: 'format_pref', label: 'Format' },
+  { key: 'format_pref', label: 'Prefers' },
   { key: 'cost_pref', label: 'Cost' },
   { key: 'target_date', label: 'Target date' },
-  { key: 'low_bandwidth', label: 'Low bandwidth' },
+  { key: 'low_bandwidth', label: 'Light on data' },
 ]
 
 export function formatField(value: unknown): string | null {

@@ -9,6 +9,11 @@ about a leaf skill resolves one unknown; asking about a skill that gates twelve
 others resolves the shape of the whole path. Weighting by unlock count is what
 lets six questions do the work of twenty.
 
+**Questions come from a committed bank, not from a model.** They are identical
+for every learner, so generating them per request only bought latency and a
+dependency on an API being up. `core.questions` reads them from disk;
+generation survives as a fallback for a skill the bank does not cover.
+
 **The answer key never leaves the server.** `QuizItem.answer_index` is written
 to the database and graded server-side. No response body in this module contains
 it, and a test asserts that across the whole payload.
@@ -33,6 +38,7 @@ from sqlmodel import Session, select
 
 from app.config import get_settings
 from app.core.mastery import MasteryTable, MasteryValue, apply_answer, confidence
+from app.core.questions import get_question
 from app.core.skill_graph import SkillGraph, SkillNode, load_graph
 from app.db import get_session
 from app.llm import get_provider
@@ -129,8 +135,25 @@ def _select_skill(
     return min(candidates, key=utility)
 
 
-def _generate_question(node: SkillNode) -> tuple[GeneratedQuestion, bool]:
-    """Ask the model for one item; fall back to the deterministic mock."""
+def _question_for(node: SkillNode) -> tuple[GeneratedQuestion, bool]:
+    """Prefer the committed bank; generate only for a skill it does not cover.
+
+    Returns (question, degraded). A banked question is never degraded -- it was
+    written and reviewed offline, so no API being down can weaken it.
+    """
+    banked = get_question(node.id)
+    if banked is not None:
+        return (
+            GeneratedQuestion(
+                question=banked.question,
+                options=list(banked.options),
+                answer_index=banked.answer_index,
+                explanation=banked.explanation,
+            ),
+            False,
+        )
+
+    logger.info("no banked question for %s -- generating one", node.id)
     prompt = QUIZ_GENERATION.format(
         skill_name=node.name,
         skill_description=node.description,
@@ -189,7 +212,7 @@ def next_question(
             max_questions=settings.diagnostic_max_questions, confidence=current_confidence,
         )
 
-    generated, degraded = _generate_question(node)
+    generated, degraded = _question_for(node)
     item = QuizItem(
         learner_id=learner_id,
         skill_id=node.id,

@@ -337,3 +337,121 @@ first failed call, which is fast enough for the badge to be honest in practice.
 - Verifying catalog metadata (duration, level, rating) rather than only the URL.
   That needs a human opening 426 pages, which was the constraint the
   propose-then-verify pipeline exists to work around.
+
+---
+
+## Phase 11 — Local models, a shipped product, and a new interface
+
+Three changes were asked for: run on local models because API keys proved
+unreliable, replace the interface with something calm and beige, and turn a
+demo into something usable.
+
+### Embeddings moved into `core/`, and off the network entirely
+
+**This is the most consequential change in the build.** Embeddings used to come
+from whichever provider generated text, which meant an API key controlled
+*search quality*, a daily quota could silently degrade retrieval, and every
+provider needed its own committed matrix because vectors from two models are not
+comparable.
+
+Embeddings are not a language-model concern. They are a similarity function over
+a fixed vocabulary of 152 skills and 426 resources. So `LLMProvider.embed` was
+deleted from the interface and `core/embeddings.py` now owns it:
+
+- `FastEmbedder` — `BAAI/bge-small-en-v1.5` through ONNX Runtime. 384 dims,
+  ~130 MB downloaded once, **13 ms per text** on this laptop's CPU. Only the
+  learner's goal string is embedded at request time.
+- `HashingEmbedder` — signed hashing over words and character trigrams. No
+  model, no download, works offline for ever. Materially worse, never absent.
+
+**Retrieval got better, not worse.** Against Gemini's embeddings,
+`ml.gradient_descent` bound to a generic "Machine Learning" page and
+`prog.functions` bound to a *JavaScript* functions page. Locally both bind
+correctly, and goal resolution puts `ml.engineer`, `sec.pentester` and
+`da.analyst` first for the obvious phrasings. Machine specifics: Ryzen 7 3700U,
+four cores, integrated graphics, no Ollama installed.
+
+**`model2vec` was tested and rejected.** 30 MB and 10 ms for 426 texts, but the
+similarity spread was too compressed to discriminate (0.135 for a true match
+against 0.035 for an unrelated one). `fastembed` is 4× the size and gives a
+usable margin.
+
+### Two thresholds were replaced because they were tuning noise
+
+The relevance floor (`cosine >= 0.70`) and the claim-match margin (`best/second
+>= 1.35`) were both calibrated against one embedding model and neither
+transferred. The floor rejected everything under the new model; the claim margin
+rejected "Docker" while accepting "stuff".
+
+- **Relevance is now relative**: a resource is kept if it lands within 0.10 of
+  the best candidate *for that skill*. Ordering within a candidate set is stable
+  across models even when absolute values are not.
+- **Claim matching has no threshold at all.** The safety property was always the
+  0.4 cap — a claim cannot remove a step from the plan — so a filter was
+  protecting against a harm that does not exist, while discarding real signal.
+  Matches are now shown to the learner instead, which is a better correction
+  mechanism than a hidden cut-off.
+
+### The placement check no longer needs a model
+
+144 questions, one per assessable skill, generated once and committed as
+`data/questions.json`. Quiz items never varied by learner — only *which* ones get
+asked does — so generating them per request bought latency and an API
+dependency, and produced wording nobody could review.
+
+The audit caught a real defect: **49% of correct answers were at position B and
+exactly one was at position D**, a bank beatable by always picking the second
+option. `balance_positions` rotates each question's options so the answer lands
+at `index % 4`, giving an exact 36/36/36/36 split without touching any wording.
+
+Answering a question went from ~3 s to **65 ms**.
+
+### The offline assistant now answers instead of echoing
+
+Chat previously fell through to the mock provider, whose canned reply dumped the
+raw context block at the learner. Since no model is the *default*, that was the
+default experience. `core/answers.py` resolves what people actually ask — what
+next, how long, why this, how far along, what does it cost — from the same rows,
+in full sentences. The mock provider is now explicitly bypassed for chat.
+
+### ReactFlow was removed after it silently dropped every edge
+
+With 90 valid nodes and 137 valid edges, all 90 nodes rendered and **not one
+edge** did; the edge container was empty with no error. Selector-safe edge ids
+did not fix it, node dimensions measured correctly, and zustand was properly
+isolated in a nested install.
+
+The layout was always computed here — depth is the longest prerequisite chain,
+so x position means "how far into the order this sits", and a physics layout
+would destroy the one property the picture exists to show. Once the positions
+are ours, the library was only drawing lines, and doing it unreliably. Drawing
+the SVG directly costs ~150 lines, **removed 140 kB from the bundle** (769 → 629
+kB), matches the rest of the design, and cannot half-fail.
+
+### Interface
+
+Warm paper (`#FBF8F2`), warm ink, one clay accent, serif headings from a system
+stack so nothing is fetched. The four steps are named for what the learner does
+— Describe, Measure, Follow, Track — and the header rail doubles as a progress
+indicator with ticks for completed steps.
+
+Guidance is treated as part of the product, not decoration: a three-step
+explainer on first visit, three real example sentences that fill the box on
+click, a "How to read this" callout on the plan, per-button tooltips in the
+learner's language ("I already know this", not "too_easy"), and suggested
+questions in the assistant.
+
+**Learner-facing copy no longer leaks internal ids.** The diff banner said
+"prog.control_flow leaves the path"; every message from `core/adapt.py` now
+resolves skill names.
+
+**The weekly hours figure was misleading.** The timeline summed the length of
+everything *starting* that week, so a 16-hour resource showed "20.0h" against a
+6-hour budget and looked broken. `week_allocations` replays the packing ledger
+so the header reads "6.0h of your 6h".
+
+### Still open
+- Code-splitting the dashboard charts. 629 kB raw, 186 kB gzipped.
+- `Docker` as a claimed skill matches `cloud.compose` rather than `cloud.docker`.
+  Harmless at the 0.4 cap and now visible to the learner, but imperfect.
+- The gold path lengths behind the 0.97× figure are still one person's estimates.

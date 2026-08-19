@@ -2,10 +2,12 @@
 
 Two ideas carry this module.
 
-**A narrow interface.** A provider does exactly three things: ``complete`` a
-prompt, ``embed`` some text, and report whether it is ``available``. Anything
-richer would leak model-specific behaviour into the callers and make the mock
-impossible to keep faithful.
+**A narrow interface.** A provider does exactly two things: ``complete`` a
+prompt, and report whether it is ``available``. Anything richer would leak
+model-specific behaviour into the callers and make the mock impossible to keep
+faithful. Embeddings deliberately do *not* appear here -- they are a local,
+deterministic similarity function and live in ``core.embeddings``, so retrieval
+quality never depends on an API key.
 
 **Validate, retry once, then fail typed.** ``call_with_schema`` parses the
 model's output as JSON, validates it against a Pydantic model, and on failure
@@ -49,14 +51,6 @@ class LLMProvider(ABC):
     @abstractmethod
     def complete(self, prompt: str, *, temperature: float = 0.2, max_tokens: int = 2048) -> str:
         """Return the model's raw text for ``prompt``."""
-
-    @abstractmethod
-    def embed(self, text: str) -> list[float]:
-        """Return an L2-normalized embedding vector for ``text``."""
-
-    def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        """Embed many texts. Providers may override with a batched API call."""
-        return [self.embed(t) for t in texts]
 
     @abstractmethod
     def available(self) -> bool:

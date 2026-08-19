@@ -4,7 +4,7 @@
 
 @layer base {
   :root {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   html,
@@ -14,62 +14,94 @@
   }
 
   body {
-    @apply bg-ink-950 text-mist-100 font-sans antialiased;
+    @apply bg-paper-100 text-ink-700 font-sans antialiased;
+    /* A faint paper grain, drawn rather than downloaded. Two barely-visible
+       radial washes keep large empty areas from reading as flat grey. */
     background-image:
-      radial-gradient(ellipse 80% 60% at 15% -10%, rgba(245, 147, 49, 0.09), transparent 60%),
-      radial-gradient(ellipse 70% 50% at 100% 0%, rgba(55, 73, 122, 0.28), transparent 65%);
+      radial-gradient(ellipse 60% 40% at 12% 0%, rgba(176, 86, 58, 0.035), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 100% 8%, rgba(91, 122, 90, 0.04), transparent 70%);
     background-attachment: fixed;
   }
 
+  h1,
+  h2,
+  h3 {
+    @apply font-serif text-ink-900;
+    letter-spacing: -0.01em;
+  }
+
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 11px;
+    height: 11px;
   }
   ::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-ink-700;
+    @apply rounded-full border-[3px] border-solid border-transparent bg-paper-500 bg-clip-content;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-ember-500/70 ring-offset-2 ring-offset-ink-950;
+    @apply outline-none ring-2 ring-clay-500/60 ring-offset-2 ring-offset-paper-100;
+  }
+
+  ::selection {
+    background: rgba(176, 86, 58, 0.16);
   }
 }
 
 @layer components {
   .card {
-    @apply rounded-xl border border-ink-700/70 bg-ink-900/70 backdrop-blur-sm shadow-lg shadow-black/30;
+    @apply rounded-xl border border-paper-400 bg-paper-50 shadow-card;
+  }
+
+  .panel {
+    @apply rounded-xl border border-paper-400 bg-paper-200/70;
   }
 
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-ink-600 bg-ink-800/80 px-2.5 py-1 text-xs font-medium text-mist-300;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-paper-400 bg-paper-50
+           px-2.5 py-1 text-xs font-medium text-ink-500;
+  }
+  .chip-accent {
+    @apply chip border-clay-300/70 bg-clay-50 text-clay-700;
   }
 
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm
+           font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-45;
   }
   .btn-primary {
-    @apply btn bg-ember-500 text-ink-950 hover:bg-ember-400;
+    @apply btn bg-clay-500 text-paper-50 shadow-card hover:bg-clay-600 active:translate-y-px;
   }
-  .btn-ghost {
-    @apply btn border border-ink-600 text-mist-300 hover:border-ink-500 hover:text-mist-100;
+  .btn-secondary {
+    @apply btn border border-paper-500 bg-paper-50 text-ink-700 hover:border-ink-400 hover:bg-paper-200;
+  }
+  .btn-quiet {
+    @apply btn px-3 py-1.5 text-ink-500 hover:bg-paper-200 hover:text-ink-900;
+  }
+
+  .field {
+    @apply w-full rounded-lg border border-paper-500 bg-paper-50 px-4 py-2.5 text-sm
+           text-ink-900 placeholder:text-ink-300 focus:border-clay-300;
   }
 
   .label {
-    @apply text-[11px] font-semibold uppercase tracking-wider text-mist-500;
+    @apply text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-400;
   }
-}
 
-/* The node-and-edge motif: a faint constellation rule used between sections. */
-.edge-rule {
-  height: 1px;
-  background-image: linear-gradient(
-    90deg,
-    transparent,
-    rgba(174, 185, 214, 0.28) 20%,
-    rgba(245, 147, 49, 0.45) 50%,
-    rgba(174, 185, 214, 0.28) 80%,
-    transparent
-  );
+  /* A short rule used to open a section, echoing a ruled notebook margin. */
+  .rule {
+    @apply h-px w-full bg-paper-400;
+  }
+  .rule-accent {
+    height: 2px;
+    width: 2.25rem;
+    @apply rounded-full bg-clay-500;
+  }
+
+  /* Inline guidance. Used liberally: every screen should explain itself. */
+  .hint {
+    @apply flex items-start gap-2 text-[13px] leading-relaxed text-ink-500;
+  }
 }

@@ -1,0 +1,1586 @@
+{
+ "cloud.ci_cd": {
+  "question": "A pull request passes all unit tests, but the deployment pipeline fails during integration testing because a database migration failed. Where should the pipeline fail next time to catch this earlier?",
+  "options": [
+   "Inside an isolated ephemeral container environment during the CI build stage.",
+   "After the artifact has been promoted to the production environment.",
+   "During the manual code review phase before merging.",
+   "In a pre-commit hook running locally on the developer's machine."
+  ],
+  "answer_index": 0,
+  "explanation": "Running integration tests against ephemeral service dependencies in the CI stage catches environment-dependent failures before artifact creation."
+ },
+ "cloud.compose": {
+  "question": "Your web service container starts up and immediately crashes because the database container isn't accepting connections yet, despite using `depends_on`. What is the correct way to handle this?",
+  "options": [
+   "Increase the container restart delay parameter in the compose file.",
+   "Implement a health check and use `condition: service_healthy` in depends_on.",
+   "Replace the default bridge network with a host-mode network.",
+   "Add an explicit sleep command to the web service entrypoint."
+  ],
+  "answer_index": 1,
+  "explanation": "`depends_on` only waits for container creation by default, so health checks with condition flags are required to wait for actual service readiness."
+ },
+ "cloud.compute": {
+  "question": "Your autoscaling group fails to scale up during a traffic spike despite CPU utilization exceeding 90%. What is the most likely underlying cause?",
+  "options": [
+   "The load balancer health check interval is set too high.",
+   "The selected instance type has reached its maximum EBS IOPS limit.",
+   "The subnet containing the instances has run out of available private IP addresses.",
+   "The security group inbound rules are blocking dynamic instance provisioning."
+  ],
+  "answer_index": 2,
+  "explanation": "New instances cannot launch if the subnet lacks available IP addresses, halting the autoscaling process entirely."
+ },
+ "cloud.config_management": {
+  "question": "You need to ensure a newly added configuration file exists on fifty servers. What playbook design practice guarantees safe, repeated executions?",
+  "options": [
+   "Clear the target directory entirely before copying the new configuration down.",
+   "Append the configuration unconditionally to avoid missing existing entries.",
+   "Use shell commands to check if the file exists before writing it.",
+   "Design tasks to be idempotent so running them multiple times yields the same state."
+  ],
+  "answer_index": 3,
+  "explanation": "Idempotence ensures that applying the same configuration repeatedly produces a stable, predictable state without unintended side effects."
+ },
+ "cloud.docker": {
+  "question": "You modified a single configuration file in your project and rebuilt the image, but Docker rebuilt every subsequent layer from scratch. Why?",
+  "options": [
+   "You placed the volatile file copy instruction too early in the Dockerfile.",
+   "The build context size exceeded the maximum cacheable layer threshold.",
+   "File permission bits changed during the copy operation, breaking the hash.",
+   "Docker cache is automatically invalidated after five consecutive builds."
+  ],
+  "answer_index": 0,
+  "explanation": "Docker cache invalidates from the first changed layer onward, so placing frequently modified files early forces downstream layers to rebuild."
+ },
+ "cloud.fundamentals": {
+  "question": "Under the shared responsibility model for a managed database service (like RDS), which task remains exclusively the customer's responsibility?",
+  "options": [
+   "Replicating storage across physical availability zones",
+   "Defining backup retention policies and access control rules",
+   "Replacing failing physical storage drives in the rack",
+   "Patching the underlying hypervisor operating system"
+  ],
+  "answer_index": 1,
+  "explanation": "The cloud provider manages infrastructure and database engine patching, but data governance, backups, and user access remain the customer's responsibility."
+ },
+ "cloud.iac": {
+  "question": "During a Terraform apply, you receive an error stating that a resource already exists and cannot be created. How do you bring this existing resource under Terraform management?",
+  "options": [
+   "Delete the resource manually in the cloud console and rerun apply.",
+   "Modify the state file directly using a text editor to inject the resource JSON.",
+   "Use the terraform import command mapping the config block to the existing resource ID.",
+   "Add a lifecycle ignore_changes block to the resource definition."
+  ],
+  "answer_index": 2,
+  "explanation": "Terraform import associates existing cloud infrastructure with your configuration without recreating the resource."
+ },
+ "cloud.iam": {
+  "question": "An application running on an EC2 instance needs to read objects from a specific S3 bucket securely without embedding long-term credentials. What should you configure?",
+  "options": [
+   "A resource-based S3 bucket policy that trusts the public internet for GET requests.",
+   "An AWS account federation trust relationship using SAML 2.0.",
+   "An IAM user with restricted bucket permissions and hardcode the keys in the app.",
+   "An IAM role attached to the EC2 instance profile with a policy scoped to that bucket."
+  ],
+  "answer_index": 3,
+  "explanation": "Instance profiles allow applications to securely inherit temporary credentials via IAM roles without manual secret management."
+ },
+ "cloud.kubernetes": {
+  "question": "A deployment's replica count was manually scaled up using `kubectl scale`, but the next GitOps sync reverted it. What is the standard Kubernetes mechanism driving this behavior?",
+  "options": [
+   "The Deployment controller continuously reconciles actual state with the declarative spec.",
+   "The API server rejects unauthorized mutations outside of recorded manifests.",
+   "Kube-proxy intercepts external scaling triggers and resets the pod count.",
+   "The kube-scheduler enforces static manifest limits against node capacity."
+  ],
+  "answer_index": 0,
+  "explanation": "The core reconciliation loop of the Deployment controller constantly compares the live state against the declarative manifest and reverts drift."
+ },
+ "cloud.kubernetes_ops": {
+  "question": "A Deployment experiences cascading Pod crashes under heavy traffic due to OOMKilled errors. What is the most robust immediate fix to restore stability before tuning code?",
+  "options": [
+   "Increase the maxSurge parameter in the rolling update strategy.",
+   "Raise the container memory limit and add an HPA targeting memory utilization.",
+   "Switch the Ingress controller to route traffic directly to individual Pod IPs.",
+   "Downgrade the container image to the previous stable release via Helm rollback."
+  ],
+  "answer_index": 1,
+  "explanation": "Raising memory limits prevents immediate OOM terminations while an HPA ensures scaling handles increased load automatically."
+ },
+ "cloud.linux_admin": {
+  "question": "A critical systemd service fails to start immediately after boot, but journalctl shows no errors for that service. Where should you check next?",
+  "options": [
+   "The active runlevel symlinks inside the /etc/rc.d/ directory",
+   "The package manager cache for corrupted dynamic library files",
+   "The service's ExecStart path and missing dependency ordering directives",
+   "The kernel ring buffer using the dmesg command for hardware faults"
+  ],
+  "answer_index": 2,
+  "explanation": "If systemd logs nothing for the service itself, the failure often stems from misconfigured dependency ordering (like After=) or an invalid ExecStart path preventing spawn."
+ },
+ "cloud.networking": {
+  "question": "Instances in a private subnet must download software updates from the internet without allowing inbound connections from external sources. What component is required?",
+  "options": [
+   "An Internet Gateway attached directly to the route table of the private subnet.",
+   "A VPC peering connection linking the private subnet to the public internet.",
+   "A security group rule allowing all outbound traffic coupled with an inbound deny-all rule.",
+   "A NAT Gateway deployed in a public subnet with a route table entry from private subnets."
+  ],
+  "answer_index": 3,
+  "explanation": "A NAT Gateway allows outbound traffic to the internet while preventing any unsolicited inbound connections."
+ },
+ "cloud.observability": {
+  "question": "Your team receives constant pager alerts whenever CPU utilization exceeds 90%, but users report no impact. How should you adjust the alerting strategy?",
+  "options": [
+   "Alert on symptom-based metrics like elevated error rates or latency instead of resource utilization.",
+   "Route all CPU alerts to a shared email distribution list instead of paging engineers.",
+   "Disable alerts entirely and rely solely on end-of-day dashboard reviews.",
+   "Lower the CPU threshold to 85% to catch potential issues even earlier."
+  ],
+  "answer_index": 0,
+  "explanation": "Alerting should focus on user-facing symptoms rather than internal resource saturation to eliminate noise and reduce pager fatigue."
+ },
+ "cloud.pipeline_automation": {
+  "question": "You are releasing a high-risk change using a canary deployment. What metric signal should automatically trigger an immediate rollback?",
+  "options": [
+   "A 50% increase in CPU utilization on the canary nodes.",
+   "An uptick in HTTP 5xx error rates specifically on the canary traffic subset.",
+   "The total depletion of the deployment artifact registry storage.",
+   "A slight increase in overall build duration for subsequent pipeline runs."
+  ],
+  "answer_index": 1,
+  "explanation": "An increase in error rates on the isolated canary subset directly indicates faulty behavior affecting real users, necessitating an automated rollback."
+ },
+ "cloud.serverless": {
+  "question": "An API backed by a serverless function experiences intermittent latency spikes of several seconds on initial requests after quiet periods. What is the most likely cause?",
+  "options": [
+   "Throttling triggered by exceeding the maximum concurrency limit.",
+   "Network saturation between the API gateway and the upstream database.",
+   "Cold start latency as the provider provisions a new execution environment.",
+   "Exhaustion of available connection pools within the database layer."
+  ],
+  "answer_index": 2,
+  "explanation": "Cold starts occur when a serverless platform initializes a new container instance to handle an incoming event after a period of inactivity."
+ },
+ "cloud.shell_scripting": {
+  "question": "Your bash script executes a command that fails inside a pipeline, but the script continues running despite `set -e` being set. Why does this happen?",
+  "options": [
+   "`set -e` only evaluates the final command of any given execution block.",
+   "Piped commands automatically spawn subshells that ignore parent exit flags.",
+   "Non-zero exit codes are suppressed when stdout is redirected.",
+   "Pipelines mask exit codes unless `set -o pipefail` is explicitly enabled."
+  ],
+  "answer_index": 3,
+  "explanation": "By default, a pipeline's exit status is that of the last command, meaning intermediate failures are ignored unless `pipefail` is active."
+ },
+ "cloud.sre": {
+  "question": "Your service has consumed 90% of its monthly error budget in the first week due to a major outage. What should be the team's immediate priority?",
+  "options": [
+   "Freeze feature deployments and focus engineering efforts on reliability and remediation.",
+   "Increase the error budget threshold so the team can continue shipping new features.",
+   "Implement stricter manual code reviews for all upcoming pull requests.",
+   "Accelerate planned feature releases to make up for lost user engagement time."
+  ],
+  "answer_index": 0,
+  "explanation": "Consuming the error budget triggers a reliability policy shift that halts risky feature changes until stability is restored."
+ },
+ "cloud.storage": {
+  "question": "An application writes thousands of objects per second to S3 with sequential prefixes, causing significant request latency. How should you resolve this?",
+  "options": [
+   "Switch from standard S3 storage to Glacier Flexible Retrieval.",
+   "Introduce randomized prefixes or hashing to distribute requests across partitions.",
+   "Increase the provisioned IOPS on the underlying storage volume.",
+   "Enable S3 Versioning on the bucket to handle concurrent writes."
+  ],
+  "answer_index": 1,
+  "explanation": "S3 scales performance based on request prefixes; randomized naming prevents hot-spotting on specific storage partitions."
+ },
+ "cloud.virtualization": {
+  "question": "When comparing Type-1 hypervisors to Linux containers, what fundamental architectural difference explains why containers boot almost instantaneously?",
+  "options": [
+   "Containers bypass network stack initialization entirely during startup.",
+   "Containers execute directly on bare metal without any kernel mediation.",
+   "Containers share the host kernel via namespaces and cgroups instead of booting a guest OS.",
+   "Hypervisors require pre-allocated disk images while containers use dynamic memory swapping."
+  ],
+  "answer_index": 2,
+  "explanation": "Containers avoid the overhead of booting a separate guest operating system because they leverage the host kernel using namespaces and cgroups."
+ },
+ "cs.algorithms": {
+  "question": "When implementing Dijkstra's algorithm on a sparse graph with V vertices and E edges, which choice yields the best time complexity?",
+  "options": [
+   "A simple linked list queue, giving O(V + E)",
+   "An unsorted array, giving O(V^2 + E)",
+   "A binary heap priority queue, giving O((V + E) log V)",
+   "A Fibonacci heap, giving O(E + V log V)"
+  ],
+  "answer_index": 3,
+  "explanation": "Using a Fibonacci heap optimizes the decrease-key operation to amortized O(1), leading to an overall time complexity of O(E + V log V)."
+ },
+ "cs.complexity": {
+  "question": "What is the time complexity of finding the kth smallest element in an unsorted array of n elements using a standard Quickselect algorithm on average?",
+  "options": [
+   "O(n)",
+   "O(k)",
+   "O(n log n)",
+   "O(n^2)"
+  ],
+  "answer_index": 0,
+  "explanation": "Quickselect partitions the array around a pivot, discarding one half each step, leading to an average-case linear time complexity of O(n)."
+ },
+ "cs.data_structures": {
+  "question": "You need to process streaming data items in strict chronological order where the newest item is processed last. Which data structure should you use?",
+  "options": [
+   "Stack",
+   "Queue",
+   "Hash Table",
+   "Min-Heap"
+  ],
+  "answer_index": 1,
+  "explanation": "A queue operates on a First-In, First-Out (FIFO) basis, making it ideal for processing items in chronological order."
+ },
+ "cs.networking": {
+  "question": "A web browser successfully resolves a domain name via DNS, but the subsequent connection times out before reaching the web server. Which layer of the network stack most likely caused this specific failure?",
+  "options": [
+   "The presentation layer, failing to decrypt the TLS certificate.",
+   "The application layer, due to an invalid HTTP request header.",
+   "The transport layer, failing to establish a TCP handshake on the specified port.",
+   "The physical layer, caused by a disconnected local network cable."
+  ],
+  "answer_index": 2,
+  "explanation": "Since DNS resolution succeeded, the failure occurs during the attempt to open a connection to the server's IP and port, which is handled by the transport layer."
+ },
+ "cs.os_basics": {
+  "question": "You attempt to delete a file you own, but the system denies permission. The directory permissions are set to read-only for your user group. Why does this happen?",
+  "options": [
+   "Files marked as read-only cannot be unlinked from any directory.",
+   "The operating system locks files that were recently accessed.",
+   "You must have root privileges to delete any file in a shared folder.",
+   "File deletion requires write permission on the containing directory."
+  ],
+  "answer_index": 3,
+  "explanation": "Deleting a file modifies the directory's contents by removing the filename-to-inode mapping, thus requiring write permission on the directory itself."
+ },
+ "da.ab_testing": {
+  "question": "You check your A/B test daily and stop it the moment the p-value drops below 0.05. What statistical issue does this introduce?",
+  "options": [
+   "An inflated Type I error rate due to peeking.",
+   "A systematic bias in the calculated uplift percentage.",
+   "A violation of the homogeneity of variance assumption.",
+   "A reduction in the detectable minimum effect size."
+  ],
+  "answer_index": 0,
+  "explanation": "Continuous monitoring and stopping a test early when it hits significance drastically inflates the false positive rate, known as the problem of multiple looks or peeking."
+ },
+ "da.business_metrics": {
+  "question": "An e-commerce team wants a metric to measure core product value delivery over time. Which is best?",
+  "options": [
+   "Number of registered user accounts",
+   "Weekly active users who complete a key transaction",
+   "Total server uptime percentage",
+   "Total lifetime website clicks"
+  ],
+  "answer_index": 1,
+  "explanation": "Active usage tied to a key transaction reflects actual value delivery rather than vanity metrics."
+ },
+ "da.dashboards": {
+  "question": "A stakeholder asks for a daily dashboard with 40 different charts. What is the best initial response?",
+  "options": [
+   "Send them a static CSV file every morning instead",
+   "Build all 40 charts into a single wide view",
+   "Ask what specific decisions the dashboard needs to drive to narrow the focus",
+   "Refuse to build any dashboards and demand they write SQL"
+  ],
+  "answer_index": 2,
+  "explanation": "Effective dashboards are tied to specific decisions, so clarifying the use case prevents clutter and abandonment."
+ },
+ "da.data_cleaning": {
+  "question": "An analysis dataset contains 5,000 rows where customer age is recorded as '-1' due to a legacy system default. How should you handle these before calculating average age?",
+  "options": [
+   "Leave them in the dataset so the total row count remains accurate",
+   "Replace every '-1' with the median age of the entire dataset immediately",
+   "Convert them to positive 1 to maintain data distribution shape",
+   "Treat them as missing values by converting them to nulls before calculation"
+  ],
+  "answer_index": 3,
+  "explanation": "Invalid default values like -1 must be treated as missing data to avoid skewing statistical calculations like averages."
+ },
+ "da.etl": {
+  "question": "An hourly ETL pipeline fails halfway through loading a large table. Which design principle ensures a safe automatic retry without duplicating records?",
+  "options": [
+   "Idempotent load operations using upserts or partition overwrites.",
+   "Strict schema enforcement at the extraction phase.",
+   "Pipeline retries configured with exponential backoff.",
+   "Upstream job validation of source file checksums."
+  ],
+  "answer_index": 0,
+  "explanation": "Idempotency ensures that running the same load step multiple times yields the same final state, preventing duplicate records during automated retries."
+ },
+ "da.experiment_design": {
+  "question": "An e-commerce team wants to test a new checkout flow by assigning users based on odd or even user IDs. What is the main risk?",
+  "options": [
+   "It reduces statistical power due to unequal group sizes.",
+   "It introduces deterministic assignment bias if IDs correlate with user behavior.",
+   "It prevents calculating the standard error of the conversion rate.",
+   "It violates the assumption of normally distributed sample means."
+  ],
+  "answer_index": 1,
+  "explanation": "Deterministic assignment using predictable attributes like user IDs can introduce selection bias if those attributes correlate with unobserved confounding variables."
+ },
+ "da.exploratory_analysis": {
+  "question": "During exploratory analysis of a new user dataset, you notice a strong positive correlation between daily app opens and total purchase amount. What conclusion can you safely draw?",
+  "options": [
+   "Opening the app daily directly causes users to spend more money",
+   "Higher spending habits compel users to open the application more frequently",
+   "There is an association between the two variables that warrants further segmentation",
+   "The correlation proves that marketing campaigns are currently successful"
+  ],
+  "answer_index": 2,
+  "explanation": "Correlation indicates an association or relationship between variables, but exploratory analysis alone cannot prove direct causation."
+ },
+ "da.forecasting": {
+  "question": "When backtesting a time series forecasting model across multiple historical cutoff points, why must feature engineering be recalculated inside each fold?",
+  "options": [
+   "To ensure the model coefficients adapt to changing seasonal trends.",
+   "To avoid violating the stationarity assumption of ARIMA models.",
+   "To correct for look-ahead bias in the baseline calculations.",
+   "To prevent data leakage from future periods into the training set."
+  ],
+  "answer_index": 3,
+  "explanation": "Recalculating features within each fold ensures that rolling statistics or target encodings do not leak future information backward into past training folds."
+ },
+ "da.fundamentals": {
+  "question": "Your customer satisfaction score distribution is heavily skewed left by a large cluster of perfect ratings. Which summary metric best represents the typical customer experience?",
+  "options": [
+   "The median, because it is resistant to skewness and extreme values",
+   "The standard deviation, to measure the spread of ratings",
+   "The range, to show the distance between lowest and highest scores",
+   "The mean, because it accounts for every rating value"
+  ],
+  "answer_index": 0,
+  "explanation": "The median is robust against skewed distributions and outliers, providing a more accurate center than the mean."
+ },
+ "da.regression_analysis": {
+  "question": "You regress customer lifetime value on email frequency and control for past spend, finding the email coefficient drops to zero. Why?",
+  "options": [
+   "Collinearity between email frequency and past spend inflated the standard errors.",
+   "Past spend was acting as a confounder that previously created spurious correlation.",
+   "Past spend was a collider, and controlling for it induced selection bias.",
+   "Email frequency violates the normality assumption of residuals."
+  ],
+  "answer_index": 1,
+  "explanation": "The drop to zero indicates that past spend was a confounder explaining the relationship, meaning the initial correlation between emails and lifetime value was spurious."
+ },
+ "da.spreadsheets": {
+  "question": "You need to pull employee department names from a master sheet into a weekly report based on matching employee IDs. Which formula should you use?",
+  "options": [
+   "=AVERAGE(Dept_Column)",
+   "=SUMIF(ID_Column, Target_ID, Dept_Column)",
+   "=VLOOKUP(Target_ID, Master_Range, 3, FALSE)",
+   "=COUNTIF(Master_Range, Target_ID)"
+  ],
+  "answer_index": 2,
+  "explanation": "VLOOKUP is designed to search for a value in the leftmost column of a range and return a corresponding value from another column."
+ },
+ "da.sql_analytics": {
+  "question": "You need to reference a complex aggregation multiple times in a single query. What is the cleanest approach?",
+  "options": [
+   "Write a nested subquery in the SELECT clause",
+   "Create a temporary table in production",
+   "Use a HAVING clause with subqueries",
+   "Use a Common Table Expression (CTE)"
+  ],
+  "answer_index": 3,
+  "explanation": "CTEs improve readability and allow you to define named subquery blocks that can be referenced repeatedly."
+ },
+ "da.storytelling": {
+  "question": "An executive summary for a busy VP should start with which of the following?",
+  "options": [
+   "The core business recommendation and expected impact",
+   "A detailed chronological breakdown of your data cleaning steps",
+   "The full methodology used in your SQL queries",
+   "Every chart generated during the exploratory analysis phase"
+  ],
+  "answer_index": 0,
+  "explanation": "Decision-makers need the bottom-line recommendation first before diving into supporting details."
+ },
+ "da.time_series": {
+  "question": "Your time series model yields high R-squared values on historical data but fails completely on out-of-sample predictions. What is the likely cause?",
+  "options": [
+   "Overfitting due to ignoring exogenous regressors.",
+   "Failure to difference a non-stationary series, leading to spurious regression.",
+   "Inadequate seasonal adjustment causing variance overestimation.",
+   "High autocorrelation in the independent variables."
+  ],
+  "answer_index": 1,
+  "explanation": "Regressing non-stationary series on one another often produces high spurious R-squared values without capturing any true underlying relationship."
+ },
+ "da.visualization": {
+  "question": "You want to show the distribution of customer ages and highlight outliers. Which chart type should you pick?",
+  "options": [
+   "A pie chart",
+   "A stacked bar chart",
+   "A box plot",
+   "A dual-axis line chart"
+  ],
+  "answer_index": 2,
+  "explanation": "A box plot clearly displays data distribution, median, and outliers without visual clutter."
+ },
+ "da.warehousing": {
+  "question": "An e-commerce fact table records daily order lines. Management now wants product subcategories sliced by regional manager territories, but these manager assignments change quarterly. How should you model this?",
+  "options": [
+   "Create a separate fact table containing only manager-to-territory mappings.",
+   "Store the manager directly inside the fact table alongside each order line.",
+   "Use a slowly changing dimension Type 2 approach on the product dimension.",
+   "Use a slowly changing dimension Type 2 approach on the employee/territory dimension."
+  ],
+  "answer_index": 3,
+  "explanation": "SCD Type 2 preserves historical changes on the dimension representing the changing attribute, which in this case is the territory manager."
+ },
+ "da.window_functions": {
+  "question": "How do you calculate a 7-day rolling average of daily active users without collapsing rows?",
+  "options": [
+   "Use AVG() OVER (ORDER BY date ROWS BETWEEN 6 PRECEDING AND CURRENT ROW)",
+   "Use RANK() partitioned by date",
+   "GROUP BY date with an aggregate AVG function",
+   "Use SUM() OVER (...) with a custom JOIN condition"
+  ],
+  "answer_index": 0,
+  "explanation": "Window frames allow calculating moving averages while preserving the grain of the original daily rows."
+ },
+ "data.database_design": {
+  "question": "An e-commerce database experiences slow search performance on an orders table filtered by customer email. Adding which database feature best addresses this without altering existing application queries?",
+  "options": [
+   "A foreign key constraint linking orders to customers.",
+   "An index on the customer email column.",
+   "Normalization of the customer email into a separate table.",
+   "A primary key on the order ID column."
+  ],
+  "answer_index": 1,
+  "explanation": "An index creates a sorted lookup structure that allows the database engine to find rows by customer email quickly without scanning the entire table."
+ },
+ "data.sql_basics": {
+  "question": "You run a query to count total sales per region, but the output omits regions with zero sales entirely. Which clause adjustment corrects this?",
+  "options": [
+   "Add a WHERE clause filtering for sales greater than or equal to zero.",
+   "Change the aggregate function from COUNT to SUM.",
+   "Start from the regions table and LEFT JOIN the sales table before grouping.",
+   "Add an ORDER BY clause with the DESC modifier."
+  ],
+  "answer_index": 2,
+  "explanation": "An inner join or implicit join drops rows without matches; starting from the complete list of regions and left joining sales preserves regions with zero sales."
+ },
+ "data.sql_joins": {
+  "question": "An INNER JOIN between a users table (100 rows) and an orders table (500 rows) returns 1,200 rows. What is the most likely reason?",
+  "options": [
+   "The users table contains duplicate primary keys.",
+   "INNER JOIN automatically calculates a Cartesian product when foreign keys are absent.",
+   "The database engine incorrectly executed the query as a FULL OUTER JOIN.",
+   "The query used an incorrect ON condition that matched multiple orders per user."
+  ],
+  "answer_index": 3,
+  "explanation": "An inner join multiplies rows when the join condition matches multiple rows on one or both sides, indicating a one-to-many or many-to-many relationship."
+ },
+ "math.algebra": {
+  "question": "If 2 raised to the power of x plus 3 equals 32, what is the value of x?",
+  "options": [
+   "The value is two",
+   "The value is five",
+   "The value is sixteen",
+   "The value is three"
+  ],
+  "answer_index": 0,
+  "explanation": "Since 32 is 2 to the fifth power, x plus 3 equals 5, making x equal to 2."
+ },
+ "math.derivatives": {
+  "question": "What is the derivative of f of x equals e raised to the power of 3x squared?",
+  "options": [
+   "3 times e raised to the 3x squared",
+   "6x times e raised to the 3x squared",
+   "3x squared times e raised to the 3x squared",
+   "e raised to the power of 6x"
+  ],
+  "answer_index": 1,
+  "explanation": "By the chain rule, you multiply the derivative of the exponent, which is 6x, by the original exponential function."
+ },
+ "math.functions_graphs": {
+  "question": "Which transformation shifts the graph of y equals f of x three units to the right?",
+  "options": [
+   "y equals f of x minus 3",
+   "y equals f of x plus 3",
+   "y equals f of the quantity x minus 3",
+   "y equals f of the quantity x plus 3"
+  ],
+  "answer_index": 2,
+  "explanation": "Replacing x with x minus 3 shifts the entire function graph horizontally to the right by 3 units."
+ },
+ "math.hypothesis_testing": {
+  "question": "A researcher fails to reject a null hypothesis at alpha = 0.05 with a p-value of 0.08. Which statement is correct?",
+  "options": [
+   "There is an 8% chance the alternative hypothesis is true.",
+   "The test has low statistical power due to a small sample size.",
+   "There is an 8% chance the null hypothesis is true.",
+   "The probability of obtaining these results by random chance alone is 8%."
+  ],
+  "answer_index": 3,
+  "explanation": "A p-value is the probability of observing test results at least as extreme as the results actually observed, under the assumption that the null hypothesis is correct."
+ },
+ "math.integrals": {
+  "question": "What is the definite integral of 2x from x equals 1 to x equals 3?",
+  "options": [
+   "The total area is 6",
+   "The total area is 8",
+   "The total area is 12",
+   "The total area is 4"
+  ],
+  "answer_index": 0,
+  "explanation": "The antiderivative of 2x is x squared; evaluating x squared from 1 to 3 gives 9 minus 1, which equals 8."
+ },
+ "math.linear_algebra": {
+  "question": "Given a 2 by 2 matrix A, what does multiplying A by a standard basis vector primarily extract?",
+  "options": [
+   "The trace of matrix A",
+   "A specific column of matrix A",
+   "The eigenvalues of matrix A",
+   "The determinant of matrix A"
+  ],
+  "answer_index": 1,
+  "explanation": "Multiplying a matrix by a standard basis vector selects and returns the corresponding column of that matrix."
+ },
+ "math.probability": {
+  "question": "A fair six-sided die is rolled twice. If the sum of the rolls is 8, what is the conditional probability that the first roll was a 4?",
+  "options": [
+   "1/3",
+   "1/6",
+   "1/5",
+   "2/5"
+  ],
+  "answer_index": 2,
+  "explanation": "There are 5 outcomes that sum to 8: (2,6), (3,5), (4,4), (5,3), and (6,2), and exactly one of these has a first roll of 4."
+ },
+ "math.statistics": {
+  "question": "If you calculate a 95% confidence interval for a population mean from a sample of 30, what does that interval actually mean?",
+  "options": [
+   "95% of all individual data points in the population fall within this calculated range.",
+   "If you repeat the experiment, 95% of the time you will get the exact same sample mean.",
+   "There is a 95% probability that the true population mean falls within this specific calculated interval.",
+   "If you take 100 different samples and compute an interval for each, about 95 of those intervals will contain the true mean."
+  ],
+  "answer_index": 3,
+  "explanation": "Confidence intervals describe the reliability of the estimation procedure over repeated sampling, not the probability of the parameter itself."
+ },
+ "ml.backpropagation": {
+  "question": "How does backpropagation compute gradients through a shared weight used at multiple nodes in a computation graph?",
+  "options": [
+   "It sums the gradients contributed by each path using the chain rule.",
+   "It multiplies the partial derivatives across all shared branches.",
+   "It isolates the path with the highest activation value.",
+   "It averages the incoming gradients from all connected paths."
+  ],
+  "answer_index": 0,
+  "explanation": "By the multivariable chain rule, the total derivative of a shared parameter is the sum of partial derivatives across all paths where it appears."
+ },
+ "ml.clustering": {
+  "question": "You run K-means on a dataset with elongated, crescent-shaped clusters and obtain poor results. Why?",
+  "options": [
+   "K-means requires categorical data transformations for non-linear boundaries.",
+   "K-means assumes spherical clusters and relies on Euclidean distance centroids.",
+   "The silhouette score penalizes non-convex cluster boundaries.",
+   "The algorithm was trapped in a local minimum due to poor centroid initialization."
+  ],
+  "answer_index": 1,
+  "explanation": "K-means minimizes variance assuming isotropic, spherical clusters, making it incapable of capturing complex geometric shapes like crescents."
+ },
+ "ml.cnn": {
+  "question": "When fine-tuning a pre-trained CNN on a very small custom dataset, why do we typically freeze the early convolutional layers?",
+  "options": [
+   "To reduce the receptive field size and avoid capturing background noise.",
+   "To ensure the fully connected classification head converges faster during backpropagation.",
+   "To prevent overfitting by preserving generic low-level feature detectors like edges and gradients.",
+   "To force the network to relearn spatial hierarchies specific to the new domain."
+  ],
+  "answer_index": 2,
+  "explanation": "Early layers capture universal visual primitives that transfer well, protecting against overfitting on small targets."
+ },
+ "ml.cost_functions": {
+  "question": "Why is Mean Squared Error generally preferred over Mean Absolute Error for training deep linear networks with gradient descent?",
+  "options": [
+   "MSE maintains a constant gradient magnitude regardless of error size.",
+   "MAE yields a flat loss surface that traps optimizers in local minima.",
+   "MSE grows exponentially to penalize massive outlier errors.",
+   "MAE produces a non-differentiable zero gradient at the exact minimum."
+  ],
+  "answer_index": 3,
+  "explanation": "MAE uses the absolute value function, which has an undefined derivative at zero, causing gradient updates to oscillate or stall near the true minimum."
+ },
+ "ml.cross_validation": {
+  "question": "When applying 5-fold cross-validation to a highly imbalanced dataset, what specific issue can occur if standard K-fold is used?",
+  "options": [
+   "Some folds may contain zero instances of the minority class.",
+   "The validation score will have artificially low variance.",
+   "Training time will increase by a factor of five.",
+   "The model will severely overfit the training folds."
+  ],
+  "answer_index": 0,
+  "explanation": "Standard K-fold splits data randomly without regard to class distribution, risking folds that lack the minority class entirely and breaking evaluation."
+ },
+ "ml.data_preprocessing": {
+  "question": "You compute the mean of a feature column across your entire dataset before splitting it into train and test sets to fill missing values. What happens?",
+  "options": [
+   "It has no impact since mean imputation is an unsupervised operation.",
+   "Data leakage occurs because test set information influences the training imputation.",
+   "The test set becomes completely invalid for calculating accuracy metrics.",
+   "The imputation fails because test rows still contain null placeholders."
+  ],
+  "answer_index": 1,
+  "explanation": "Using statistics derived from the whole dataset leaks test distribution information into the training phase."
+ },
+ "ml.decision_trees": {
+  "question": "When growing a classification tree, why might a split that yields zero impurity gain still be chosen?",
+  "options": [
+   "To ensure balanced class distributions in terminal nodes.",
+   "To satisfy the minimum samples per leaf stopping criterion.",
+   "Decision trees never choose splits with zero impurity gain.",
+   "To reduce the structural complexity penalty in cost-complexity pruning."
+  ],
+  "answer_index": 2,
+  "explanation": "Algorithms greedily select splits that maximize impurity reduction, so a split with zero gain would never be chosen as it provides no discriminatory value."
+ },
+ "ml.dimensionality_reduction": {
+  "question": "When applying PCA to a dataset with features on vastly different scales, what is the most critical preprocessing step and why?",
+  "options": [
+   "Normalizing sample rows to unit length.",
+   "Log-transforming highly skewed features.",
+   "Centering features so their means are zero.",
+   "Standardizing features to unit variance."
+  ],
+  "answer_index": 3,
+  "explanation": "Without scaling, features with larger numeric ranges disproportionately dominate the covariance matrix, skewing the principal components."
+ },
+ "ml.ensembles": {
+  "question": "How does Random Forest reduce overfitting compared to a single fully-grown decision tree?",
+  "options": [
+   "By averaging predictions across trees trained on bootstrapped data and random feature subsets.",
+   "By enforcing a strict maximum depth limit across all component trees.",
+   "By pruning branches that exhibit high variance on validation subsets.",
+   "By sequentially training trees on the residual errors of previous iterations."
+  ],
+  "answer_index": 0,
+  "explanation": "Random Forests reduce variance through bagging and random feature selection, decorrelating the trees so their averaged prediction is more stable."
+ },
+ "ml.evaluation_metrics": {
+  "question": "A model predicts rare fraudulent transactions with 99% accuracy by always guessing legitimate. Which metric best reveals its failure?",
+  "options": [
+   "Macro-averaged precision",
+   "Recall on the minority class",
+   "Cross-entropy loss",
+   "ROC-AUC score"
+  ],
+  "answer_index": 1,
+  "explanation": "Recall on the minority class directly measures the proportion of actual positive fraud cases successfully caught by the model, exposing zero-detection failures."
+ },
+ "ml.feature_engineering": {
+  "question": "You add a target-encoded categorical feature using the mean target value of each category calculated across the entire dataset. What is the primary risk?",
+  "options": [
+   "The feature will become perfectly collinear with the intercept.",
+   "The model will train significantly slower due to high dimensionality.",
+   "Severe overfitting due to target leakage from the validation set.",
+   "Categorical values with low frequencies will default to zero."
+  ],
+  "answer_index": 2,
+  "explanation": "Calculating target encoding globally leaks the target labels of the whole dataset, leading to overly optimistic evaluation scores and poor generalization."
+ },
+ "ml.foundations": {
+  "question": "You want to automate routing customer support tickets to the right department based on past history. Which approach fits best?",
+  "options": [
+   "Linear regression to predict the exact resolution time in minutes.",
+   "Unsupervised clustering to group similar tickets by text length.",
+   "Reinforcement learning to chat directly with incoming customers.",
+   "Supervised classification using historical labeled tickets."
+  ],
+  "answer_index": 3,
+  "explanation": "Supervised classification uses historical labeled examples to learn mapping inputs to predefined department categories."
+ },
+ "ml.frameworks": {
+  "question": "You observe your PyTorch training loss increasing steadily while gradients are non-zero. What is the most likely cause?",
+  "options": [
+   "You forgot to call optimizer.zero_grad() before backward(), accumulating stale gradients.",
+   "You forgot to include model.eval() inside the training loop.",
+   "You forgot to detach the target tensors from the computation graph.",
+   "You forgot to call optimizer.zero_grad() before computing loss."
+  ],
+  "answer_index": 0,
+  "explanation": "Failing to zero gradients accumulates them across iterations, causing erratic updates that increase loss."
+ },
+ "ml.gradient_descent": {
+  "question": "Your validation loss oscillates wildly and diverges after adding a new feature. What is the most direct fix?",
+  "options": [
+   "Switch from SGD to Adam to momentum-correct the updates.",
+   "Decrease the learning rate to prevent overshooting steps.",
+   "Remove the new feature to reduce input dimensionality.",
+   "Increase the batch size to stabilize gradient estimates."
+  ],
+  "answer_index": 1,
+  "explanation": "Wild oscillations and divergence typically indicate that the gradient steps are too large for the local curvature, requiring a reduced learning rate."
+ },
+ "ml.hyperparameter_tuning": {
+  "question": "Why might random search outperform grid search when tuning a high-dimensional model with only two truly influential hyperparameters?",
+  "options": [
+   "Grid search suffers from gradient descent divergence.",
+   "Random search evaluates more total combinations.",
+   "Grid search wastes trials exploring uninformative dimensions.",
+   "Random search guarantees finding the global optimum."
+  ],
+  "answer_index": 2,
+  "explanation": "Random search tests distinct values across every hyperparameter independently, avoiding redundant evaluations along grid axes for unresponsive parameters."
+ },
+ "ml.knn": {
+  "question": "Why does the K-Nearest Neighbours algorithm typically degrade in performance on very high-dimensional datasets?",
+  "options": [
+   "The distance matrix requires exponential RAM to store before computing predictions.",
+   "Lazy learners cannot compute gradients when feature dimensions exceed sample sizes.",
+   "Categorical variables cannot be converted into Euclidean coordinate spaces.",
+   "Distances between points become roughly equidistant, destroying the discriminatory power of nearest neighbours."
+  ],
+  "answer_index": 3,
+  "explanation": "In high dimensions, the curse of dimensionality causes the distance to the nearest and furthest points to converge, making neighbour selection ineffective."
+ },
+ "ml.linear_regression": {
+  "question": "A feature in your linear regression model has a large positive coefficient, but a high p-value (insignificant). How should you interpret this?",
+  "options": [
+   "The feature is collinear with other predictors, creating high coefficient uncertainty.",
+   "The relationship between this feature and the target is strictly non-linear.",
+   "The feature values should be normalized before retraining the model.",
+   "The feature has a massive causal impact on the target variable."
+  ],
+  "answer_index": 0,
+  "explanation": "High p-values alongside large coefficients often indicate multicollinearity, where shared variance inflates standard errors and makes individual estimates unreliable."
+ },
+ "ml.llm_applications": {
+  "question": "In a RAG pipeline, retrieved chunks are relevant, but the LLM generates an answer containing fabricated facts not in the context. What should you adjust?",
+  "options": [
+   "Switch to a dense embedding model trained on domain-specific corpora.",
+   "Lower the retrieval temperature and strengthen prompt instructions enforcing strict grounding to context.",
+   "Fine-tune the embedding model using hard negative mining.",
+   "Increase the chunk overlap size during document ingestion to preserve sentence boundaries."
+  ],
+  "answer_index": 1,
+  "explanation": "Hallucinations despite good retrieval indicate the generation parameters or system prompt fail to constrain the model strictly to the provided context."
+ },
+ "ml.logistic_regression": {
+  "question": "How does scaling input features affect a fitted logistic regression model's decision boundary?",
+  "options": [
+   "It changes the final predicted probability for every sample.",
+   "It rotates the decision boundary in the feature space.",
+   "It scales the corresponding learned weights inversely without shifting the boundary.",
+   "It improves the linear separability of non-linear datasets."
+  ],
+  "answer_index": 2,
+  "explanation": "Linear decision boundaries are invariant to feature scaling because the weights scale inversely to compensate for the input magnitude."
+ },
+ "ml.mlops": {
+  "question": "A regression model's feature inputs show no distribution shift, but prediction error steadily increases over two weeks. What underlying issue does this indicate?",
+  "options": [
+   "Data leakage during the initial model training phase",
+   "Covariate shift in the independent input variables",
+   "Severe class imbalance in the incoming inference requests",
+   "Concept drift, where the relationship between features and target has changed"
+  ],
+  "answer_index": 3,
+  "explanation": "When feature distributions remain stable while errors rise, the underlying real-world dynamics have changed, which is the definition of concept drift."
+ },
+ "ml.model_deployment": {
+  "question": "Your deployed model's p99 latency jumped from 50ms to 450ms after adding a feature lookup step. What is the most effective immediate architectural fix?",
+  "options": [
+   "Implement a low-latency caching layer for frequent feature lookups",
+   "Upgrade the training cluster GPU instance type",
+   "Increase the client timeout threshold in the API gateway",
+   "Retrain the model on a smaller dataset"
+  ],
+  "answer_index": 0,
+  "explanation": "Caching frequent feature lookups directly addresses the network or database bottleneck causing the latency spike without changing the model itself."
+ },
+ "ml.naive_bayes": {
+  "question": "What happens to the class probability outputs of a Naive Bayes classifier if two features are perfectly, redundantly correlated?",
+  "options": [
+   "The decision boundary becomes linear regardless of the underlying distribution.",
+   "The model double-counts their joint evidence, overconfidently pushing probabilities toward extremes.",
+   "The conditional independence assumption is violated, causing zero division errors.",
+   "The model fails to converge during gradient descent optimization."
+  ],
+  "answer_index": 1,
+  "explanation": "Because Naive Bayes assumes features are conditionally independent, it treats correlated features as separate independent pieces of evidence, compounding their influence."
+ },
+ "ml.neural_nets": {
+  "question": "Why does replacing all ReLU activations in a deep network with linear activations eliminate the benefits of additional depth?",
+  "options": [
+   "Depth only provides non-linear feature interactions.",
+   "Linear functions cannot propagate gradients backwards.",
+   "Stacked linear transformations collapse into a single linear projection.",
+   "Linear layers cause exploding activations in deep architectures."
+  ],
+  "answer_index": 2,
+  "explanation": "The composition of multiple linear functions is itself just another linear function, meaning depth adds no expressive power without non-linearities."
+ },
+ "ml.nlp_basics": {
+  "question": "Why might a TF-IDF vectorizer assign a low score to a highly frequent domain-specific term in your corpus?",
+  "options": [
+   "The smoothing parameter removes rare tokens before frequency calculation.",
+   "The inverse document frequency component penalizes terms that appear across many documents.",
+   "The term frequency component normalizes against document length, reducing long-document bias.",
+   "The IDF component approaches zero because the term appears in nearly every document in the corpus."
+  ],
+  "answer_index": 3,
+  "explanation": "If a term appears in almost all documents, its inverse document frequency factor log(N / DF) approaches zero."
+ },
+ "ml.optimizers": {
+  "question": "Your training loss oscillates wildly without decreasing. Which adjustment directly targets this training dynamic?",
+  "options": [
+   "Decrease the learning rate or apply a warm-up schedule.",
+   "Remove batch normalization to stabilize variance.",
+   "Increase the learning rate to escape local minima.",
+   "Switch from Adam to standard SGD with momentum."
+  ],
+  "answer_index": 0,
+  "explanation": "Wild oscillations indicate step sizes are too large for the loss landscape curvature, requiring a reduced learning rate to stabilize convergence."
+ },
+ "ml.pipelines": {
+  "question": "You need to impute missing values using the training set median before scaling. How do you prevent data leakage during cross-validation?",
+  "options": [
+   "Compute medians globally, then split for cross-validation.",
+   "Wrap both steps inside a scikit-learn Pipeline object.",
+   "Apply imputation fold-by-fold manually before scaling.",
+   "Fit the imputer and scaler on the full dataset once."
+  ],
+  "answer_index": 1,
+  "explanation": "A scikit-learn Pipeline ensures that preprocessing steps are fitted exclusively on the training fold of each cross-validation split."
+ },
+ "ml.regularization": {
+  "question": "Adding L1 regularisation to a linear model causes many feature weights to drop precisely to zero. Why?",
+  "options": [
+   "It constrains the weights inside a hyperspherical boundary where corners align with zero.",
+   "It completely eliminates collinearity between correlated input features.",
+   "Its absolute value penalty has a constant derivative that applies uniform pressure toward zero.",
+   "It squares large weights to prevent any single feature from dominating the prediction."
+  ],
+  "answer_index": 2,
+  "explanation": "The L1 penalty has a constant derivative of -1 or 1 regardless of weight size, pulling smaller weights all the way to zero unlike the proportional pull of L2."
+ },
+ "ml.sequence_models": {
+  "question": "During training of an LSTM on long sequences, you notice gradients vanish completely past step 50. What structural property mitigates this?",
+  "options": [
+   "The recurrent weight matrix is automatically orthogonalized during backpropagation through time.",
+   "The output gate prevents gradient saturation by clipping activation values.",
+   "The hidden state gating mechanism scales gradients through multiplicative weights.",
+   "The constant error carousel in the cell state allows gradients to flow uninterrupted via addition."
+  ],
+  "answer_index": 3,
+  "explanation": "The additive cell state update acts as a highway for gradients, bypassing the multiplicative decay seen in standard RNNs."
+ },
+ "ml.svm": {
+  "question": "In a soft-margin Support Vector Machine, what is the role of the regularization hyperparameter C?",
+  "options": [
+   "It balances the trade-off between maximizing the margin width and minimizing training errors.",
+   "It scales the hinge loss penalty for points correctly classified within the margin.",
+   "It controls the dimensionality of the mapped space in the kernel trick.",
+   "It sets the exact number of support vectors allowed to violate the margin."
+  ],
+  "answer_index": 0,
+  "explanation": "The parameter C trades off margin maximization against the penalty assigned to training data points that fall on the wrong side of the margin."
+ },
+ "ml.train_test_split": {
+  "question": "When building a model on time-series sales data, why is a standard random train-test split a bad idea?",
+  "options": [
+   "It increases the variance of the evaluation metrics unnecessarily.",
+   "It causes data leakage by letting future information predict past targets.",
+   "It removes the need for a validation set during hyperparameter tuning.",
+   "It guarantees that the model will underfit the training distribution."
+  ],
+  "answer_index": 1,
+  "explanation": "Random splitting mixes past and future data, allowing the model to use future trends to predict past points, causing severe data leakage."
+ },
+ "ml.transformers": {
+  "question": "Why is positional encoding added directly to token embeddings at the input of a Transformer rather than concatenated?",
+  "options": [
+   "Addition ensures that position vectors dominate the attention scores over semantic embeddings.",
+   "Concatenation would exponentially increase the computational complexity of the attention matrix.",
+   "Addition preserves the vector dimensionality while allowing self-attention to jointly learn token identity and position.",
+   "Concatenation breaks the multi-head projection weight matrix dimensions during linear transformation."
+  ],
+  "answer_index": 2,
+  "explanation": "Adding position vectors maintains the required embedding dimension d_model while permitting the dot-product attention to capture positional relationships."
+ },
+ "prog.cli": {
+  "question": "You want to find all occurrences of the word 'error' in a large log file and save only the matching lines to a new file. Which command achieves this?",
+  "options": [
+   "grep errors.txt < log.txt | 'error'",
+   "cat log.txt | errors.txt >> 'error'",
+   "cat log.txt > grep 'error' > errors.txt",
+   "grep 'error' log.txt > errors.txt"
+  ],
+  "answer_index": 3,
+  "explanation": "Grep searches the specified file for the pattern and the redirection operator writes the output stream to the new file."
+ },
+ "prog.control_flow": {
+  "question": "Which loop structure should you use to repeatedly prompt a user for input until they type 'quit'?",
+  "options": [
+   "A while loop because the termination depends on a dynamic condition.",
+   "A for loop combined with a break statement.",
+   "A recursive function with no base case.",
+   "A for loop because the number of iterations is predetermined."
+  ],
+  "answer_index": 0,
+  "explanation": "A while loop is designed for indefinite iteration where the loop continues as long as a condition holds true."
+ },
+ "prog.debugging": {
+  "question": "When examining a Python traceback, why should you look at the very last line first?",
+  "options": [
+   "It lists the local variables that caused the script to freeze.",
+   "It names the specific exception type and error message that terminated the program.",
+   "It shows the exact line number of the third-party library where execution started.",
+   "It provides a link to documentation explaining how to disable the warning."
+  ],
+  "answer_index": 1,
+  "explanation": "Python tracebacks are printed chronologically, meaning the final line contains the actual exception raised and its description."
+ },
+ "prog.files_io": {
+  "question": "Why is it best practice to use a 'with' statement when opening files in Python?",
+  "options": [
+   "It prevents other programs from reading your hard drive.",
+   "It automatically loads the entire file contents into memory at once.",
+   "It ensures the file stream is properly closed as soon as the block exits, even if errors occur.",
+   "It automatically converts text files into JSON format."
+  ],
+  "answer_index": 2,
+  "explanation": "The context manager protocol guarantees resource cleanup, safely closing the file handle upon exiting the indented block."
+ },
+ "prog.functions": {
+  "question": "What happens when you modify a mutable list passed as an argument inside a function?",
+  "options": [
+   "A local copy is created automatically, leaving the original list unchanged.",
+   "Python raises a TypeError because lists cannot be passed to functions.",
+   "The changes only persist if the function explicitly returns the list.",
+   "The changes affect the original list outside the function due to object reference passing."
+  ],
+  "answer_index": 3,
+  "explanation": "Python passes arguments by assignment, meaning mutable objects like lists can be mutated in place across function boundaries."
+ },
+ "prog.git": {
+  "question": "You accidentally committed a work-in-progress to the main branch instead of your feature branch. You want to undo the commit but keep all your code changes staged in your working directory. What should you do?",
+  "options": [
+   "git reset --soft HEAD~1",
+   "git reset --hard HEAD~1",
+   "git checkout -b feature-branch",
+   "git revert HEAD"
+  ],
+  "answer_index": 0,
+  "explanation": "Git reset --soft moves the HEAD back one commit while leaving your working tree and staging area completely untouched."
+ },
+ "prog.numpy": {
+  "question": "You have a 1D NumPy array of 100 integers and want to add 5 to every element. Which approach is both idiomatic and efficient?",
+  "options": [
+   "Array.append(5)",
+   "Array + 5",
+   "Np.map(lambda x: x + 5, array)",
+   "For x in array: x + 5"
+  ],
+  "answer_index": 1,
+  "explanation": "NumPy relies on vectorisation and broadcasting to perform element-wise arithmetic operations in compiled C code without explicit loops."
+ },
+ "prog.pandas": {
+  "question": "You have a DataFrame df with columns 'Category' and 'Sales'. Which expression correctly calculates total sales per category?",
+  "options": [
+   "df.pivot_table(index='Sales', aggfunc='sum')",
+   "df.agg('Sales', by='Category', func='sum')",
+   "df.groupby('Category')['Sales'].sum()",
+   "df.sum('Sales').groupby('Category')"
+  ],
+  "answer_index": 2,
+  "explanation": "Grouping by a column name and selecting the target column before applying an aggregation function is the standard pandas pattern."
+ },
+ "prog.python_basics": {
+  "question": "What is the final value of x after executing: x = 3; x = x + 2; x = x * 2?",
+  "options": [
+   "The value is 6",
+   "The value is 5",
+   "The value is 7",
+   "The value is 10"
+  ],
+  "answer_index": 3,
+  "explanation": "Assignment evaluates sequentially: x becomes 3, then 5 after addition, and finally 10 after multiplication."
+ },
+ "prog.python_data_structures": {
+  "question": "You need a collection that automatically removes duplicate entries and allows fast membership testing. Which should you choose?",
+  "options": [
+   "A set, because elements are unique and hash-based.",
+   "A dictionary, because it stores key-value pairs.",
+   "A list, because it preserves insertion order.",
+   "A tuple, because it is immutable."
+  ],
+  "answer_index": 0,
+  "explanation": "Sets store unordered, unique elements and provide optimized O(1) average-time complexity for membership tests."
+ },
+ "prog.python_oop": {
+  "question": "When should you use class inheritance in Python?",
+  "options": [
+   "Whenever you have two classes that share any common variable name.",
+   "When a subclass represents a specialized version of a more general superclass ('is-a' relationship).",
+   "To combine completely unrelated functions into a single global namespace.",
+   "To make your code run faster by bypassing the interpreter."
+  ],
+  "answer_index": 1,
+  "explanation": "Inheritance models an 'is-a' relationship, allowing subclasses to inherit and extend behavior from a parent class."
+ },
+ "prog.testing": {
+  "question": "You have three tests that require a newly populated database instance. Instead of repeating setup code in every test, what pytest feature should you use?",
+  "options": [
+   "A global setup function named setup_database()",
+   "A test class inheriting from DatabaseTestCase",
+   "A pytest fixture that yields the database instance",
+   "A mock object patching the database connection"
+  ],
+  "answer_index": 2,
+  "explanation": "Pytest fixtures are the standard, modular way to manage test setup and teardown logic cleanly across multiple test functions."
+ },
+ "prog.venv_packaging": {
+  "question": "Why is it best practice to run 'python -m venv .venv' inside your project directory rather than installing project packages globally?",
+  "options": [
+   "It encrypts your source code files to protect intellectual property.",
+   "It allows pip to download packages without requiring an active internet connection.",
+   "It automatically compiles your code into machine language for faster execution.",
+   "It prevents conflicting package version requirements between different projects on your system."
+  ],
+  "answer_index": 3,
+  "explanation": "Virtual environments isolate project dependencies so that upgrading a library for one project does not break another."
+ },
+ "sec.auth_security": {
+  "question": "An application successfully authenticates a user but fails to invalidate the pre-login session identifier upon login. Which vulnerability does this introduce?",
+  "options": [
+   "Session fixation",
+   "Cross-site scripting",
+   "Broken object level authorization",
+   "Insecure direct object reference"
+  ],
+  "answer_index": 0,
+  "explanation": "Failing to issue a new session identifier after authentication allows attackers to pre-set and hijack user sessions."
+ },
+ "sec.cloud_security": {
+  "question": "An external user can read objects in an S3 bucket despite the bucket policy explicitly denying public access. What is the most probable cause?",
+  "options": [
+   "Object Ownership is set to BucketOwnerEnforced instead of ObjectWriter",
+   "An Access Control List (ACL) on the specific object grants public read permissions",
+   "The AWS account root user has bypassed regional service control policies",
+   "An IAM user policy attached to the requester grants explicit allow, overriding the deny"
+  ],
+  "answer_index": 1,
+  "explanation": "S3 access is evaluated across bucket policies, IAM, and ACLs; legacy object ACLs can inadvertently grant public access even when bucket policies restrict it."
+ },
+ "sec.cryptography": {
+  "question": "An application needs to securely store API keys belonging to third-party users in a database so the backend can make calls on their behalf. Which primitive should be used?",
+  "options": [
+   "Asymmetric signing using an RSA private key stored on the server.",
+   "Base64 encoding to obscure the text from casual database observers.",
+   "Symmetric encryption using AES-GCM with a securely managed secret key.",
+   "One-way cryptographic hashing using SHA-256 with a unique random salt."
+  ],
+  "answer_index": 2,
+  "explanation": "Symmetric encryption allows the backend to decrypt and recover the plaintext API keys when needed, whereas hashing is irreversible."
+ },
+ "sec.exploitation": {
+  "question": "You gain a restricted low-privileged shell on a Linux system and notice an internally bound service running as root on localhost:8080. What technique allows you to access this service from your external machine?",
+  "options": [
+   "Reverse TCP payload generation",
+   "Kernel exploit compilation",
+   "DNS tunneling",
+   "SSH local port forwarding"
+  ],
+  "answer_index": 3,
+  "explanation": "SSH local port forwarding tunnels traffic through the compromised host to interact with services bound exclusively to the local loopback interface."
+ },
+ "sec.firewalls_ids": {
+  "question": "An IDS triggers hundreds of alerts nightly for a vulnerability affecting an internal legacy system that cannot be patched. What is the most operationally sound response?",
+  "options": [
+   "Tune the rule to exclude alerts originating from that specific destination IP",
+   "Lower the severity of the alert to reduce log noise",
+   "Place the legacy system behind a strict application layer firewall",
+   "Disable the signature globally in the IDS configuration"
+  ],
+  "answer_index": 0,
+  "explanation": "Tuning the specific rule to ignore the known unpatchable asset eliminates false positives while preserving detection for other vulnerable hosts."
+ },
+ "sec.forensics": {
+  "question": "During a live Windows memory acquisition, which artefact is most likely to be overwritten or degraded first if you delay dumping RAM?",
+  "options": [
+   "Master File Table records on the system drive",
+   "Network socket connection states and active DLL injections",
+   "Prefetch files stored in the C:\\Windows\\Prefetch directory",
+   "Registry hives loaded in the system hive files"
+  ],
+  "answer_index": 1,
+  "explanation": "Volatile RAM constantly changes as processes terminate, network states shift, and injected code gets paged out, making volatile data highly time-sensitive."
+ },
+ "sec.fundamentals": {
+  "question": "A team encrypts all database backups at rest, but system administrators retain plaintext access via their root server accounts. Which part of the CIA triad is most directly compromised by this administrative design?",
+  "options": [
+   "Availability",
+   "Non-repudiation",
+   "Confidentiality",
+   "Integrity"
+  ],
+  "answer_index": 2,
+  "explanation": "Giving administrators unconstrained plaintext access to sensitive data weakens confidentiality by expanding the circle of actors who can read the protected information."
+ },
+ "sec.governance": {
+  "question": "Your risk register shows an unmitigated high risk that exceeds executive appetite, but budget constraints prevent remediation. What is the appropriate governance response?",
+  "options": [
+   "Transfer the risk by purchasing a commercial cybersecurity insurance policy",
+   "Downgrade the risk rating to medium to fit within current operational limits",
+   "Close the risk ticket and document that the system is legacy",
+   "Accept the risk formally with executive sign-off and scheduled review"
+  ],
+  "answer_index": 3,
+  "explanation": "When remediation is impossible due to resource constraints, leadership must formally accept the residual risk with documented accountability."
+ },
+ "sec.hashing_pki": {
+  "question": "A developer wants to store user passwords securely. They compute SHA-256(password) and save the resulting hash in the database. Why is this practice unsafe in production?",
+  "options": [
+   "Fast hashing algorithms allow attackers to crack weak passwords instantly using precomputed rainbow tables.",
+   "The resulting hash changes every time the user logs in, causing authentication to fail.",
+   "SHA-256 is too slow, causing unacceptable login latency for users.",
+   "Hashes are fully reversible back to plain text using standard mathematical inverses."
+  ],
+  "answer_index": 0,
+  "explanation": "Unsalted, fast cryptographic hash functions like raw SHA-256 are vulnerable to offline brute-force and rainbow table attacks."
+ },
+ "sec.incident_response": {
+  "question": "During a suspected malware outbreak on a critical database server, the incident response team must preserve volatile RAM before powering down the machine. What is the primary reason for this step?",
+  "options": [
+   "To prevent the hard drive from encrypting its partition table.",
+   "To capture running process trees, network connections, and injected code not written to disk.",
+   "To ensure the Master Boot Record remains intact for forensic imaging.",
+   "To automatically generate a timeline of file creation events."
+  ],
+  "answer_index": 1,
+  "explanation": "Volatile memory contains crucial forensic artifacts like active network connections and fileless malware that vanish when power is lost."
+ },
+ "sec.linux_hardening": {
+  "question": "An administrator needs to restrict a user to running only the 'systemctl restart nginx' command with root privileges via sudo. Which configuration entry achieves this safely?",
+  "options": [
+   "username ALL=(ALL) NOPASSWD: /bin/systemctl restart *",
+   "username ALL=(ALL) /bin/systemctl restart nginx",
+   "username ALL=(root) NOPASSWD: /bin/systemctl restart nginx",
+   "username ALL=(root) /bin/systemctl"
+  ],
+  "answer_index": 2,
+  "explanation": "Specifying the absolute path to the exact command prevents command chaining and unauthorized service management."
+ },
+ "sec.malware_analysis": {
+  "question": "A packed binary refuses to execute its malicious payload inside your basic sandbox. What dynamic analysis step should you take next?",
+  "options": [
+   "Run the binary with root privileges to force hypervisor bypass",
+   "Recompile the binary with symbols enabled to read the source code",
+   "Patch the entry point to skip the packing routine entirely",
+   "Identify and bypass environmental checks or anti-analysis hooks"
+  ],
+  "answer_index": 3,
+  "explanation": "Malware often detects analysis environments via timing checks or VM artefacts, requiring anti-analysis workarounds to reveal its true behavior."
+ },
+ "sec.network_security": {
+  "question": "During a packet capture analysis, you notice multiple local hosts receiving unsolicited ARP replies mapping the default gateway's IP to a different MAC address. What attack is occurring?",
+  "options": [
+   "ARP cache poisoning",
+   "DNS spoofing",
+   "MAC flooding",
+   "DHCP starvation"
+  ],
+  "answer_index": 0,
+  "explanation": "Gratuitous or unsolicited ARP replies mapping an existing IP to a new MAC address are the hallmark of ARP cache poisoning."
+ },
+ "sec.pentest_methodology": {
+  "question": "During a scheduled penetration test, you discover an undocumented server hosting sensitive production data outside the agreed-upon IP range. What is your immediate next step?",
+  "options": [
+   "Immediately expand the scope to include the new server and test it.",
+   "Halt testing on that asset and contact the client point of contact for clarification.",
+   "Run an aggressive vulnerability scan against the asset to map its exposure.",
+   "Exfiltrate a small file to prove impact for the final report."
+  ],
+  "answer_index": 1,
+  "explanation": "Rules of engagement require pausing activity on out-of-scope assets and notifying the client immediately to avoid legal and operational liability."
+ },
+ "sec.recon": {
+  "question": "You are performing a stealthy external assessment and need to discover open ports and services without triggering stateful packet inspection firewalls. Which Nmap technique is best suited?",
+  "options": [
+   "TCP Connect scan (-sT)",
+   "UDP scan (-sU)",
+   "TCP SYN scan (-sS)",
+   "FIN scan (-sF)"
+  ],
+  "answer_index": 2,
+  "explanation": "A TCP SYN scan completes only the first half of the handshake, making it faster and less likely to be logged by standard application logs than a full connect scan."
+ },
+ "sec.secure_coding": {
+  "question": "When implementing input validation for a web API accepting user data, why is relying solely on client-side validation insufficient?",
+  "options": [
+   "Client-side validation always introduces SQL injection vulnerabilities.",
+   "Modern browsers automatically strip validation logic during compilation.",
+   "Clients lack the compute power to run regex effectively.",
+   "Attackers can bypass the browser and send crafted payloads directly to the API."
+  ],
+  "answer_index": 3,
+  "explanation": "Client-side controls can be easily circumvented using tools like curl or intercepting proxies, making server-side validation mandatory."
+ },
+ "sec.siem": {
+  "question": "An authentication alert triggers every 30 seconds across 50 accounts. How should you adjust the detection rule to reduce alert fatigue while preserving visibility?",
+  "options": [
+   "Add a correlation aggregation to trigger on frequency per source IP",
+   "Exclude all service accounts from the authentication index",
+   "Disable the rule until the affected users update their passwords",
+   "Lower the severity threshold to ignore single failures"
+  ],
+  "answer_index": 0,
+  "explanation": "Aggregating by frequency and source IP catches brute-force attacks while grouping noisy individual failures into a single actionable incident."
+ },
+ "sec.sql_injection": {
+  "question": "When building a dynamic SQL query in application code, why does proper parameterisation completely prevent SQL injection?",
+  "options": [
+   "It strips out SQL keywords such as DROP and UNION from user input",
+   "It forces the database engine to treat user input strictly as data, never as executable code",
+   "It encrypts the input parameters before they reach the database driver",
+   "It automatically escapes all dangerous characters like single quotes before execution"
+  ],
+  "answer_index": 1,
+  "explanation": "Parameterisation separates the query structure from the parameters, ensuring the database never compiles user input as part of the SQL command."
+ },
+ "sec.threat_modeling": {
+  "question": "During a threat modeling session for a new file upload service, an engineer notes that an attacker could flood the storage bucket with gigabytes of dummy data. Which STRIDE category matches this abuse case?",
+  "options": [
+   "Tampering",
+   "Information Disclosure",
+   "Denial of Service",
+   "Spoofing"
+  ],
+  "answer_index": 2,
+  "explanation": "Exhausting storage resources to make a service unavailable to legitimate users is a classic Denial of Service vector."
+ },
+ "sec.tls": {
+  "question": "An internal microservice calls an external payment gateway over HTTPS, but the development team disables certificate hostname verification in the HTTP client library to fix a sandbox environment bug. What vulnerability does this introduce in production?",
+  "options": [
+   "SQL injection attacks through the HTTP headers sent during the TLS handshake.",
+   "Denial of service via cryptographic CPU exhaustion on the client application.",
+   "Broken session management due to predictable TLS session identifier generation.",
+   "Man-in-the-middle attacks where traffic can be intercepted and decrypted by an active network adversary."
+  ],
+  "answer_index": 3,
+  "explanation": "Disabling hostname validation stops the client from confirming it is talking to the legitimate server, enabling successful man-in-the-middle attacks."
+ },
+ "sec.web_vulnerabilities": {
+  "question": "A user can view private account details by simply changing the integer ID parameter in the URL from their own to another user's ID. Which OWASP vulnerability category does this represent?",
+  "options": [
+   "Broken Access Control",
+   "Security Misconfiguration",
+   "Cross-Site Scripting",
+   "Injection"
+  ],
+  "answer_index": 0,
+  "explanation": "Failure to verify whether the authenticated user has permission to access resources belonging to other IDs is a classic broken access control flaw."
+ },
+ "sec.xss_csrf": {
+  "question": "Your web application requires users to submit state-changing POST requests. Which defense best prevents attackers from silently triggering these requests from an external malicious site?",
+  "options": [
+   "Implementing a strict Content Security Policy script-src directive",
+   "Setting the SameSite attribute to Strict on session cookies",
+   "Encoding all user-supplied output in HTML body contexts",
+   "Enabling HTTP Strict Transport Security (HSTS)"
+  ],
+  "answer_index": 1,
+  "explanation": "The SameSite cookie attribute controls whether cookies are sent with cross-site requests, directly mitigating Cross-Site Request Forgery."
+ },
+ "web.accessibility": {
+  "question": "You are building a custom interactive dropdown menu using a plain div instead of a native select element. What attribute must you add to the trigger element to ensure screen readers announce its open or closed state?",
+  "options": [
+   "data-state=\"closed\"",
+   "role=\"menu\"",
+   "aria-expanded=\"false\"",
+   "tabindex=\"-1\""
+  ],
+  "answer_index": 2,
+  "explanation": "aria-expanded communicates the collapsible state of an element like a dropdown to assistive technologies."
+ },
+ "web.auth_sessions": {
+  "question": "You are storing a session identifier in a browser cookie for a secure single-page application. Which combination of cookie flags provides the strongest defense against XSS and CSRF?",
+  "options": [
+   "Secure, SameSite=Strict",
+   "HttpOnly, SameSite=None",
+   "Secure, HttpOnly, SameSite=Strict",
+   "Secure, HttpOnly, SameSite=Lax"
+  ],
+  "answer_index": 3,
+  "explanation": "HttpOnly blocks XSS script access to cookies, while SameSite=Lax balances protection against CSRF with reasonable cross-site navigation UX."
+ },
+ "web.css": {
+  "question": "You have a container with display: flex and three items inside. You want the items to wrap onto the next line when they run out of horizontal space. What property should you add to the container?",
+  "options": [
+   "flex-wrap: wrap;",
+   "display: grid-wrap;",
+   "flex-flow: column;",
+   "overflow: wrap;"
+  ],
+  "answer_index": 0,
+  "explanation": "The flex-wrap property controls whether flex items are forced onto one line or can wrap onto multiple lines."
+ },
+ "web.css_frameworks": {
+  "question": "In a utility-first CSS framework like Tailwind, you want to style an element so it has padding of 1rem on all sides and a background color of indigo-500. Which class combination is correct?",
+  "options": [
+   "pad-4 bg-indigo-500",
+   "p-4 bg-indigo-500",
+   "padding-md bg-indigo-500",
+   "p-1 bg-indigo-500"
+  ],
+  "answer_index": 1,
+  "explanation": "In Tailwind, p-4 applies a padding of 1rem (4 * 0.25rem) and bg-indigo-500 sets the indigo background color."
+ },
+ "web.deployment": {
+  "question": "Your single-page app works locally, but refreshing a deep route like `/dashboard/settings` returns a 404 from your static host. Why?",
+  "options": [
+   "The reverse proxy is blocking HTTPS traffic for nested paths.",
+   "The build script failed to compile the settings route into the bundle.",
+   "The hosting server is not configured to redirect all requests to index.html.",
+   "Environment variables are missing on the production server."
+  ],
+  "answer_index": 2,
+  "explanation": "Client-side routers handle deep paths via JavaScript, so static hosts need a fallback rule pointing all unknown paths to index.html."
+ },
+ "web.dom": {
+  "question": "You attach a click listener to a parent <ul> and a child <li>. When the <li> is clicked, which runs first?",
+  "options": [
+   "The child <li> listener because event targets execute before bubbling.",
+   "Both run simultaneously in random order.",
+   "Only the parent <ul> listener triggers.",
+   "The parent <ul> listener via the capturing phase."
+  ],
+  "answer_index": 3,
+  "explanation": "Events travel down from the root during the capture phase before reaching the target element."
+ },
+ "web.express_api": {
+  "question": "An Express middleware validates request payloads. When validation fails, how should it pass the error to a centralized error-handling middleware?",
+  "options": [
+   "return next(new ValidationError('Invalid'))",
+   "res.locals.error = 'Invalid'; next();",
+   "throw new Error('Validation failed')",
+   "return res.status(400).json({ error: 'Invalid' })"
+  ],
+  "answer_index": 0,
+  "explanation": "Passing an error argument to next() tells Express to skip normal routing and jump directly to the error-handling middleware."
+ },
+ "web.fetch": {
+  "question": "You receive a 404 response from a fetch() call. Why does your catch block not execute?",
+  "options": [
+   "You forgot to await the response body conversion.",
+   "A 404 is a successful HTTP transaction, so fetch only rejects on network failures.",
+   "Fetch automatically retries 404 requests until they succeed.",
+   "Fetch treats all HTTP status codes above 400 as JavaScript exceptions."
+  ],
+  "answer_index": 1,
+  "explanation": "The fetch promise only rejects on direct network errors, requiring manual checks of response.ok for HTTP error codes."
+ },
+ "web.html": {
+  "question": "You need to group a set of navigation links inside the header of a webpage so screen readers identify it as primary site navigation. Which HTML element should you use?",
+  "options": [
+   "<div>",
+   "<section>",
+   "<nav>",
+   "<aside>"
+  ],
+  "answer_index": 2,
+  "explanation": "The <nav> element is a semantic landmark specifically designed for major blocks of navigation links."
+ },
+ "web.http": {
+  "question": "A client successfully submits a new user resource via a POST request, and the server creates it. Which HTTP status code should the server return in the response?",
+  "options": [
+   "204 No Content",
+   "303 See Other",
+   "200 OK",
+   "201 Created"
+  ],
+  "answer_index": 3,
+  "explanation": "Status code 201 Created indicates that the request has succeeded and led to the creation of a new resource."
+ },
+ "web.javascript": {
+  "question": "What is the output of running `console.log(typeof null)` in JavaScript?",
+  "options": [
+   "\"object\"",
+   "\"boolean\"",
+   "\"null\"",
+   "\"undefined\""
+  ],
+  "answer_index": 0,
+  "explanation": "Due to a historical bug in the first implementation of JavaScript, typeof null evaluates to \"object\" rather than \"null\"."
+ },
+ "web.js_async": {
+  "question": "An async function calls an await fetch() without a try/catch block. What happens if the network request fails?",
+  "options": [
+   "It returns a resolved Promise containing the error status.",
+   "It returns a rejected Promise.",
+   "It crashes the JavaScript engine immediately.",
+   "It silently returns undefined."
+  ],
+  "answer_index": 1,
+  "explanation": "An unhandled rejection occurs because async functions automatically wrap thrown errors or failed awaits into a rejected promise."
+ },
+ "web.modules": {
+  "question": "What is the primary purpose of a JavaScript bundler like Vite or Webpack in production?",
+  "options": [
+   "To automatically write unit tests for your ES modules.",
+   "To convert TypeScript types into native Python bytecode.",
+   "To combine numerous individual modules and assets into optimized files for browser delivery.",
+   "To execute server-side database migrations safely."
+  ],
+  "answer_index": 2,
+  "explanation": "Bundlers resolve import graphs to merge and minify assets, reducing network requests for browser clients."
+ },
+ "web.node_backend": {
+  "question": "You are processing a 4GB CSV file in a Node.js service running on a constrained container. What is the safest approach to prevent memory exhaustion?",
+  "options": [
+   "Increase the V8 heap size limit using the max-old-space-size flag.",
+   "Read the entire file into memory using fs.readFileSync and parse it.",
+   "Use fs.readFile with the 'utf8' encoding flag to parse lines asynchronously.",
+   "Use readable streams with pipeline to process data chunks incrementally."
+  ],
+  "answer_index": 3,
+  "explanation": "Streams process data piece by piece without loading the entire file into RAM, preventing out-of-memory errors on constrained systems."
+ },
+ "web.npm": {
+  "question": "Why is committing the package-lock.json file to version control considered a best practice?",
+  "options": [
+   "It guarantees exact dependency tree reproducibility across different machines and installs.",
+   "It automatically updates your packages to the latest major version.",
+   "It reduces the total disk space required by node_modules.",
+   "It prevents anyone else from modifying your source code."
+  ],
+  "answer_index": 0,
+  "explanation": "The lockfile locks down exact dependency versions, ensuring identical installs across all developer environments and CI pipelines."
+ },
+ "web.orm_persistence": {
+  "question": "An API endpoint fetching 50 blog posts with their respective authors results in 51 database queries. Which ORM feature prevents this N+1 query issue?",
+  "options": [
+   "Enabling connection pooling for concurrent requests",
+   "Using eager loading with explicit joins or includes",
+   "Applying database indexing on the foreign key columns",
+   "Wrapping the retrieval logic inside a single database transaction"
+  ],
+  "answer_index": 1,
+  "explanation": "Eager loading fetches the primary records and their relations in a single query or a controlled join, eliminating the N+1 pattern."
+ },
+ "web.performance": {
+  "question": "A heavy React dashboard drops frames during rapid user input. Profiling shows a complex list component re-renders constantly. What is the most effective first optimization?",
+  "options": [
+   "Move the entire data fetching logic into a web worker.",
+   "Wrap every child component in React.memo immediately.",
+   "Use virtualization to render only visible list items.",
+   "Convert all state management to use Redux toolkit."
+  ],
+  "answer_index": 2,
+  "explanation": "Virtualization directly reduces the DOM node count and rendering cost for large lists, addressing the root cause of dropped frames."
+ },
+ "web.react": {
+  "question": "Why must custom component names start with a capital letter in JSX?",
+  "options": [
+   "To enforce strict ES6 module import requirements in Babel.",
+   "To signal to TypeScript that the component accepts props.",
+   "To allow React to optimize their rendering lifecycle automatically.",
+   "To distinguish them from built-in HTML elements in string tags."
+  ],
+  "answer_index": 3,
+  "explanation": "JSX uses uppercase versus lowercase to differentiate user-defined React components from native HTML elements."
+ },
+ "web.react_hooks": {
+  "question": "When should you wrap a function definition in useCallback?",
+  "options": [
+   "Whenever the function is passed as a prop to a memoized child component.",
+   "To optimize every event handler inside standard functional components.",
+   "To prevent the function from being garbage collected between renders.",
+   "Whenever the function performs heavy asynchronous data fetching."
+  ],
+  "answer_index": 0,
+  "explanation": "useCallback is primarily useful to maintain referential equality when passing callbacks to optimized child components that rely on reference checks."
+ },
+ "web.react_routing": {
+  "question": "How do you correctly access a dynamic route parameter like ':id' inside a routed component using React Router?",
+  "options": [
+   "By reading window.location.pathname directly inside the component body.",
+   "By utilizing the useParams hook provided by the routing library.",
+   "By accessing the router object attached to the component's props.",
+   "By querying the history stack via a custom React context provider."
+  ],
+  "answer_index": 1,
+  "explanation": "The useParams hook is the standard, modern way to extract dynamic segments from the current URL in React Router."
+ },
+ "web.react_state": {
+  "question": "You need to compute a filtered list from a large array of items whenever the search query changes. What is the most idiomatic approach?",
+  "options": [
+   "Store the filtered list in a ref to avoid unnecessary component re-renders.",
+   "Store the filtered list in state and update it inside a useEffect hook.",
+   "Derive the filtered list directly during render using standard array methods.",
+   "Use a useMemo hook with the unfiltered list and search query as dependencies."
+  ],
+  "answer_index": 2,
+  "explanation": "Derived state should be calculated during render rather than synchronized via effects when it depends purely on existing props or state."
+ },
+ "web.responsive": {
+  "question": "You are building a mobile-first card component. How should you write a media query to apply styles only on screens that are at least 768px wide?",
+  "options": [
+   "@media (screen-width >= 768px)",
+   "@media (min-device-width: 768px)",
+   "@media (max-width: 768px)",
+   "@media (min-width: 768px)"
+  ],
+  "answer_index": 3,
+  "explanation": "In mobile-first design, min-width media queries apply styles upward from the specified breakpoint as viewport width increases."
+ },
+ "web.rest_api_design": {
+  "question": "An API needs to support querying a large collection of user records with filtering, sorting, and cursor-based pagination. Which endpoint design is most RESTful?",
+  "options": [
+   "GET /api/v1/users?status=active&sort=created_at&cursor=eyJpZ...",
+   "GET /api/v1/users/filter/active/sorted/created_at/page/2",
+   "POST /api/v1/users/query?limit=50&cursor=eyJpZ...",
+   "POST /api/v1/users/search with filters in the JSON body"
+  ],
+  "answer_index": 0,
+  "explanation": "REST uses GET for retrieval, placing pagination cursors, filters, and sorting parameters in the query string to keep resource URIs clean."
+ },
+ "web.state_management": {
+  "question": "When building a React application, how should you decide between global state management and server-state caching libraries?",
+  "options": [
+   "Use global state for all application data to maintain a single source of truth.",
+   "Use server-state libraries for remote data fetching, caching, and synchronization.",
+   "Use global state for API responses and server-state libraries for user preferences.",
+   "Use server-state libraries exclusively when avoiding Redux boilerplate."
+  ],
+  "answer_index": 1,
+  "explanation": "Server-state libraries specialize in asynchronous request lifecycle management, whereas global state stores handle client-side UI state."
+ },
+ "web.testing_frontend": {
+  "question": "When writing component tests with Testing Library, why is querying by test ID generally discouraged for standard interactive elements?",
+  "options": [
+   "It forces developers to mock complex context providers in every test file.",
+   "It slows down test execution compared to querying by CSS class selectors.",
+   "It couples tests to implementation details rather than user-facing behavior.",
+   "It prevents React Testing Library from firing native browser events correctly."
+  ],
+  "answer_index": 2,
+  "explanation": "Testing Library encourages queries that reflect how users interact with the UI, such as by role or text, rather than internal attributes."
+ },
+ "web.typescript": {
+  "question": "You have a variable typed as string | number. After checking typeof val === 'string', TypeScript allows string methods. Why?",
+  "options": [
+   "Structural typing",
+   "Type widening",
+   "Generic inference",
+   "Type narrowing"
+  ],
+  "answer_index": 3,
+  "explanation": "Type narrowing uses control flow analysis to refine a union type into a more specific type within a conditional block."
+ }
+}

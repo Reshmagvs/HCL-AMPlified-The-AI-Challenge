@@ -21,9 +21,11 @@ class HealthResponse(BaseModel):
     version: str
     llm_available: bool
     llm_provider: str
+    embedder: str
     catalog_size: int
     graph_nodes: int
     graph_tracks: int
+    question_bank: int
 
 
 # --------------------------------------------------------------------------- #
@@ -158,6 +160,9 @@ class PathResponse(BaseModel):
     goal_node_ids: list[str]
     goal_names: list[str]
     items: list[PathItemOut] = Field(default_factory=list)
+    # week -> hours actually allocated, so the timeline can show a week's real
+    # load rather than the length of everything that starts in it.
+    week_load: dict[int, float] = Field(default_factory=dict)
     llm_degraded: bool = False
 
 

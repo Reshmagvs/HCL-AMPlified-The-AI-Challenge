@@ -118,6 +118,16 @@ def compute_diff(before: dict[str, Any], after: dict[str, Any], v1: int, v2: int
 # --------------------------------------------------------------------------- #
 # Event handlers
 # --------------------------------------------------------------------------- #
+def _name_of(skill_id: str) -> str:
+    """The human name for a skill, for text a learner will read.
+
+    Every message returned from this module is shown verbatim in the interface,
+    so leaking `prog.control_flow` into a sentence is a defect, not a detail.
+    """
+    graph = load_graph()
+    return graph.require(skill_id).name if skill_id in graph else skill_id
+
+
 def _find_item(items: list[Any], payload: dict[str, Any]) -> Any | None:
     """Locate the item an event refers to, by row id or by skill id."""
     if (item_id := payload.get("item_id")) is not None:
@@ -139,8 +149,8 @@ def _too_easy(mastery: MasteryTable, items: list[Any], payload: dict[str, Any]) 
     mastery.set(item.skill_id, TOO_EASY_SCORE, "milestone", confidence=0.7, force=True)
     return EventOutcome(
         message=(
-            f"Marked as already known. {item.skill_id} leaves the path and everything "
-            "after it moves earlier."
+            f"Marked as already known, so {_name_of(item.skill_id)} has left your plan "
+            "and everything after it moved earlier."
         ),
         log={"skill_id": item.skill_id, "new_score": TOO_EASY_SCORE},
     )
@@ -161,9 +171,15 @@ def _too_hard(mastery: MasteryTable, items: list[Any], payload: dict[str, Any]) 
 
     return EventOutcome(
         message=(
-            f"Added {len(demoted)} prerequisite(s) before {item.skill_id}."
+            f"Added {len(demoted)} piece{'s' if len(demoted) != 1 else ''} of groundwork "
+            f"before {_name_of(item.skill_id)}: "
+            + ", ".join(_name_of(p) for p in demoted[:3])
+            + "."
             if demoted
-            else f"{item.skill_id} stays, with its prerequisites already scheduled first."
+            else (
+                f"{_name_of(item.skill_id)} stays where it is — everything it depends on "
+                "is already scheduled before it."
+            )
         ),
         log={"skill_id": item.skill_id, "reinstated": demoted},
     )
@@ -205,8 +221,13 @@ def _milestone_failed(mastery: MasteryTable, items: list[Any], payload: dict[str
     for other in covered:
         other.status = "pending"
 
+    named = ", ".join(_name_of(s) for s in skills[:3])
+    more = f" and {len(skills) - 3} more" if len(skills) > 3 else ""
     return EventOutcome(
-        message=f"Checkpoint failed. Remediation for {len(skills)} skill(s) returns to the path.",
+        message=(
+            f"Checkpoint marked as failed, so {named}{more} came back into your plan "
+            "for another pass."
+        ),
         touched_items=covered,
         log={"skills": list(skills), "new_score": MILESTONE_FAIL_SCORE},
     )
@@ -217,7 +238,7 @@ def _completed_item(mastery: MasteryTable, items: list[Any], payload: dict[str, 
     item.status = "done"
     mastery.set(item.skill_id, COMPLETED_SCORE, "milestone", confidence=0.8, force=True)
     return EventOutcome(
-        message=f"{item.skill_id} marked complete.",
+        message=f"{_name_of(item.skill_id)} marked as done.",
         replan=False,
         touched_items=[item],
         log={"skill_id": item.skill_id},
@@ -230,7 +251,7 @@ def _resource_disliked(items: list[Any], payload: dict[str, Any]) -> EventOutcom
     alternatives = [a for a in (item.alternatives or []) if a != item.course_id]
     if not alternatives:
         return EventOutcome(
-            message=f"No alternative resource is available for {item.skill_id}.",
+            message=f"There is no other resource in the catalogue for {_name_of(item.skill_id)}.",
             replan=False,
         )
 
@@ -246,10 +267,11 @@ def _resource_disliked(items: list[Any], payload: dict[str, Any]) -> EventOutcom
         },
     }
     item.rationale_text = (
-        f"Swapped to the next-best resource for {item.skill_id} after you dismissed the previous one."
+        f"Swapped to the next best resource for {_name_of(item.skill_id)} after you asked "
+        "for a different one."
     )
     return EventOutcome(
-        message=f"Swapped the resource for {item.skill_id}.",
+        message=f"Swapped the resource for {_name_of(item.skill_id)}.",
         replan=False,
         touched_items=[item],
         log={"skill_id": item.skill_id, "from": previous, "to": item.course_id},
@@ -267,8 +289,9 @@ def _behind_schedule(learner: Any, payload: dict[str, Any]) -> EventOutcome:
 
     return EventOutcome(
         message=(
-            f"Repacked the schedule around being {weeks_behind} week(s) behind."
-            + (f" Capacity is now {learner.hours_per_week:g}h/week." if changed else "")
+            f"Repacked your schedule around being {weeks_behind} week"
+            f"{'s' if weeks_behind != 1 else ''} behind."
+            + (f" You are now planned at {learner.hours_per_week:g}h a week." if changed else "")
         ),
         options=[
             "Increase hours per week (try the what-if slider first)",
@@ -311,8 +334,9 @@ def _goal_changed(learner: Any, mastery: MasteryTable, payload: dict[str, Any]) 
 
     return EventOutcome(
         message=(
-            f"Goal updated to {', '.join(graph.require(g).name for g in new_ids)}. "
-            f"{len(preserved)} skill(s) you already know carry over."
+            f"Goal changed to {', '.join(graph.require(g).name for g in new_ids)}. "
+            f"{len(preserved)} skill{'s' if len(preserved) != 1 else ''} you have already "
+            "done carried over."
         ),
         learner_changed=True,
         log={"goal_node_ids": new_ids, "preserved": preserved},
