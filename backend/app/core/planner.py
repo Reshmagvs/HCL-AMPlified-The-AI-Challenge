@@ -153,6 +153,26 @@ class WeekPacker:
         return max(1, math.ceil(hours / self.capacity - 1e-9))
 
 
+def scheduled_hours(node, chosen: ScoredResource | None) -> float:
+    """How much of the learner's week this step actually costs.
+
+    A resource's full length is the wrong number to schedule. CS50 is twenty
+    hours and covers six skills; Khan Academy's Algebra 2 is sixty hours and
+    covers two. Charging the whole course to one node produced a sixty-hour week
+    inside a six-hour budget and pushed the finish week past seventy.
+
+    So the resource's length is divided across the skills it covers, and the
+    result is bounded by the curated estimate for this node -- which is the more
+    trustworthy figure for "how long does this skill take". The card still shows
+    the resource's real duration; only the scheduling arithmetic uses this.
+    """
+    if chosen is None:
+        return node.est_hours
+    resource = chosen.resource
+    share = resource.duration_hours / max(1, len(resource.skills_covered))
+    return round(max(0.5, min(share, node.est_hours * 2.0)), 2)
+
+
 def _earliest_week(
     graph: SkillGraph, skill_id: str, placed: dict[str, int], packer: WeekPacker,
     finish: dict[str, int],
@@ -201,7 +221,7 @@ def build_plan(
         if chosen is None:
             unbound.append(skill_id)
 
-        hours = chosen.resource.duration_hours if chosen else node.est_hours
+        hours = scheduled_hours(node, chosen)
         floor = _earliest_week(graph, skill_id, start_week, packer, finish_week)
         week = packer.place(hours, floor)
         start_week[skill_id] = week
@@ -218,6 +238,7 @@ def build_plan(
             evidence_q_ids=list(value.evidence_q_ids),
             ranked=candidates,
             week=week,
+            scheduled_hours=round(hours, 2),
             prefs=prefs,
             hours_per_week=hours_per_week,
         )

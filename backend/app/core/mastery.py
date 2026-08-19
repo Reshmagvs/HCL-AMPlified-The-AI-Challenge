@@ -203,18 +203,24 @@ def _nudge_ancestors(
             break
 
 
-def confidence(table: MasteryTable, gap: set[str], graph: SkillGraph) -> float:
+def confidence(table: MasteryTable, scope: set[str], graph: SkillGraph) -> float:
     """How well the current beliefs cover the skills that actually matter.
 
+    ``scope`` is the learner's *required* set, not their remaining gap. Measuring
+    over the gap looks correct and behaves badly: a correctly answered skill
+    leaves the gap immediately, so the confidence meter would sit at zero for the
+    first several questions and then jump -- the opposite of what the learner is
+    being shown. Over the required set, every answer moves the number.
+
     Weighted by downstream unlock count, because being unsure about a bottleneck
-    skill is more costly than being unsure about a leaf. Returns 1.0 for an empty
-    gap so the diagnostic terminates rather than looping on nothing.
+    skill is more costly than being unsure about a leaf. An empty scope returns
+    1.0 so the diagnostic terminates rather than looping on nothing.
     """
-    if not gap:
+    if not scope:
         return 1.0
     total_weight = 0.0
     measured_weight = 0.0
-    for skill in gap:
+    for skill in scope:
         weight = 1.0 + graph.downstream_unlock_count(skill)
         total_weight += weight
         measured_weight += weight * table.get(skill).confidence

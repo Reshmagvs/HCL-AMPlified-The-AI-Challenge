@@ -48,6 +48,12 @@ WEIGHT_FORMAT = 0.15
 WEIGHT_COST = 0.10
 WEIGHT_RATING = 0.10
 
+# Below this cosine a resource does not credibly cover the skill at all. Real
+# matches sit at 0.75-0.85 and mis-mappings at 0.65-0.68, so the floor separates
+# them cleanly. It is a hard filter, not a weight: "Data Structures and
+# Algorithms" bound to Linux Administration is wrong however good the resource is.
+RELEVANCE_FLOOR = 0.70
+
 _LEVEL_ORDER = {"beginner": 0, "intermediate": 1, "advanced": 2}
 _VIDEO_FORMATS = {"video"}
 
@@ -273,6 +279,13 @@ def _format_match(resource_format: str, pref: str) -> float:
     return 0.8 if {resource_format, pref} <= {"interactive", "course"} else 0.15
 
 
+def _relevance(query: np.ndarray | None, vector: np.ndarray | None) -> float | None:
+    """Cosine between a skill and a resource, or None when either is unembedded."""
+    if query is None or vector is None:
+        return None
+    return float(np.dot(query, vector))
+
+
 def passes_hard_filters(resource: Resource, prefs: Preferences) -> bool:
     """Constraints, not preferences. Applied before any score is computed."""
     if prefs.cost_pref == "free" and resource.cost != "free":
@@ -304,14 +317,22 @@ def score_resources(
 
     query = skill_vector(skill_id)
     target_level = expected_level(difficulty)
+
+    relevance = {r.id: _relevance(query, resource_vector(r.id)) for r in candidates}
+    on_topic = [r for r in candidates if relevance[r.id] is None or relevance[r.id] >= RELEVANCE_FLOOR]
+    if on_topic:
+        candidates = on_topic
+    # If nothing clears the floor the best available is still returned -- an
+    # imperfect resource beats an empty step -- but the score reflects the gap.
+
     scored: list[ScoredResource] = []
     for resource in candidates:
-        vector = resource_vector(resource.id)
-        cosine = (
-            float(np.dot(query, vector)) if query is not None and vector is not None else 0.5
-        )
+        raw = relevance[resource.id]
         components = {
-            "cosine": max(0.0, min(1.0, (cosine + 1.0) / 2.0)),
+            # Rescaled so the usable range does its work: cosine 0.5 -> 0,
+            # 1.0 -> 1. The naive (c+1)/2 mapping compressed a 0.15 cosine gap
+            # into 0.07 of score, which let format and rating outvote relevance.
+            "cosine": 0.5 if raw is None else max(0.0, min(1.0, (raw - 0.5) * 2.0)),
             "level": _level_match(resource.level, target_level),
             "format": _format_match(resource.format, prefs.format_pref),
             "cost": 1.0 if resource.cost == "free" else 0.25,

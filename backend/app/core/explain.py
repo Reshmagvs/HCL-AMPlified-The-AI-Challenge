@@ -97,6 +97,7 @@ def build_provenance(
     evidence_q_ids: list[int],
     ranked: list[ScoredResource],
     week: int,
+    scheduled_hours: float,
     prefs: Preferences,
     hours_per_week: float,
 ) -> dict[str, Any]:
@@ -129,7 +130,10 @@ def build_provenance(
         },
         "placement": {
             "week": week,
-            "est_hours": node.est_hours,
+            # The hours actually budgeted for this step, which is a share of a
+            # multi-skill resource rather than its full length -- so the Why chip
+            # and the card agree.
+            "est_hours": scheduled_hours,
             "unlocks": sorted(graph.children.get(skill_id, ()))[:6],
             "unlock_count": graph.downstream_unlock_count(skill_id),
         },

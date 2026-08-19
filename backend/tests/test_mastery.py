@@ -106,15 +106,19 @@ def test_gap_is_everything_below_threshold() -> None:
     assert table.gap({"a", "b", "c"}) == {"b", "c"}
 
 
-def test_confidence_rises_as_skills_are_measured(graph) -> None:
-    gap = set(graph.required_for(["ml.engineer"]))
+def test_confidence_rises_with_every_answer(graph) -> None:
+    """Measured over the required set, so a correct answer always moves it."""
+    required = set(graph.required_for(["ml.engineer"]))
     table = MasteryTable()
-    start = confidence(table, gap, graph)
+    readings = [confidence(table, required, graph)]
 
-    for index, skill_id in enumerate(sorted(gap)[:20]):
+    for index, skill_id in enumerate(sorted(required)[:8]):
         apply_answer(table, graph, skill_id=skill_id, correct=True,
                      dont_know=False, question_id=index)
-    assert confidence(table, gap, graph) > start
+        readings.append(confidence(table, required, graph))
+
+    assert readings == sorted(readings), f"confidence went backwards: {readings}"
+    assert readings[-1] > readings[0]
 
 
 def test_confidence_of_an_empty_gap_is_one(graph) -> None:

@@ -220,3 +220,55 @@ own copy and no provenance record, and passing one to `render_template` raised
 **`_earliest_week` uses prerequisite *finish* weeks, not start weeks**, so a
 long prerequisite that spills across three weeks does not get overlapped by its
 dependent.
+
+---
+
+## Phase 8 — Interface
+
+**React Query pauses instead of failing, and it stranded every screen.** With
+the backend stopped, queries sat at `status: 'pending'`, `fetchStatus: 'paused'`
+for ever. `isError` never became true, so the screens rendered their loading
+skeleton indefinitely — and the earlier `data!` non-null assertion turned that
+into a full white screen (`Cannot read properties of undefined`). Three changes,
+each needed:
+1. `lib/queryState.ts` derives failure from `failureReason` as soon as *one*
+   attempt has failed, rather than trusting `status`.
+2. `retry` never fires for an unreachable host (`ApiError.isOffline`) — that
+   retry is precisely what got paused. `networkMode: 'always'` and a pinned
+   `onlineManager` are set too, but nothing depends on them holding.
+3. `ErrorBoundary` wraps the routes so no render-time exception can ever blank
+   the page again.
+Verified by stopping uvicorn mid-session, seeing "Backend unreachable / Retry",
+restarting it and recovering through the Retry button.
+
+**Resource duration is not scheduling time.** CS50 is 20 hours and covers six
+skills; Khan Academy's Algebra 2 is 60 hours and covers two. Charging the whole
+course to one node produced a 60-hour week inside a 6-hour budget and a finish
+week of 77. `planner.scheduled_hours` now divides a resource's length across the
+skills it covers and bounds the result by the node's curated estimate: the same
+path finished at week 47 with 287 hours, and the card still shows the resource's
+real length next to the budgeted time.
+
+**A relevance floor was needed on binding.** "Data Structures and Algorithms"
+was being bound to Linux Administration. The cause was arithmetic, not data: the
+naive `(cosine + 1) / 2` rescale compressed the real spread (genuine matches
+0.75–0.85, mis-mappings 0.65–0.68) into a few points of score, which format and
+rating could outvote. Fixed twice over — a hard `RELEVANCE_FLOOR = 0.70` filter,
+and a `(cosine - 0.5) * 2` rescale that gives the term its range back. The
+brief's stated weights are unchanged.
+
+**Confidence is measured over the required set, not the gap.** Over the gap, a
+correctly answered skill leaves the set immediately, so the meter read 0% for
+the first four questions and then jumped — the opposite of what the learner is
+being shown. Caught by running the diagnostic by hand, not by a test.
+
+**Chat context carries the dependency chain.** Asked "why is linear algebra in
+my path?", the assistant correctly refused to answer because the context only
+listed *what* was in the path. It now includes each step's `path_to_goal` and
+measured level, which is the difference between a grounded assistant that is
+useless and one that is useful.
+
+**Known cosmetic issue.** All four track checkpoints land in weeks 46–47 on a
+long ML path. That is correct behaviour — a topological order interleaves tracks
+until the end, so no track genuinely *finishes* early — but it reads oddly on
+the dashboard. Left as is rather than faking earlier checkpoints.

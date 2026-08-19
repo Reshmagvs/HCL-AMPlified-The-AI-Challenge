@@ -1,48 +1,63 @@
-import { useQuery } from '@tanstack/react-query'
-import { getHealth } from './lib/api'
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom'
+import Layout from './components/Layout'
+import ErrorBoundary from './components/ErrorBoundary'
+import ChatPanel from './components/ChatPanel'
+import Intake from './pages/Intake'
+import Diagnostic from './pages/Diagnostic'
+import Path from './pages/Path'
+import Dashboard from './pages/Dashboard'
+import { useSession } from './lib/store'
 
 /**
- * Phase 0 shell: proves the frontend, the typed client and the API agree.
- * Replaced by the routed application in the interface phase.
+ * Routes and the one guard that matters:
+ *
+ * The `future` flags opt in to React Router v7 behaviour now, which keeps the
+ * console clean — a demo that logs warnings reads as unfinished.
+ * the diagnostic, path and dashboard
+ * screens all assume a committed learner, so an unresolved session is sent back
+ * to intake rather than allowed to render against a null id.
  */
+function RequireLearner({ children }: { children: React.ReactNode }) {
+  const learnerId = useSession((s) => s.learnerId)
+  return learnerId === null ? <Navigate to="/" replace /> : <>{children}</>
+}
+
 export default function App() {
-  const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: ['health'],
-    queryFn: getHealth,
-  })
-
   return (
-    <main className="mx-auto flex min-h-full max-w-3xl flex-col justify-center gap-6 p-6">
-      <header>
-        <p className="label">Lodestar</p>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Learning is a dependency graph, not a search result.
-        </h1>
-      </header>
-      <div className="edge-rule" />
-
-      {isLoading && <p className="text-mist-500">Contacting the API…</p>}
-
-      {isError && (
-        <div className="card p-5">
-          <p className="font-semibold text-signal-bad">Backend unreachable</p>
-          <p className="mt-1 text-sm text-mist-500">{(error as Error).message}</p>
-          <button className="btn-ghost mt-4" onClick={() => void refetch()}>
-            Retry
-          </button>
-        </div>
-      )}
-
-      {data && (
-        <dl className="card grid grid-cols-2 gap-x-6 gap-y-4 p-5 sm:grid-cols-3">
-          {Object.entries(data).map(([key, value]) => (
-            <div key={key}>
-              <dt className="label">{key.replace(/_/g, ' ')}</dt>
-              <dd className="mt-0.5 font-mono text-sm text-mist-100">{String(value)}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
-    </main>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+      <Layout>
+        <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<Intake />} />
+          <Route
+            path="/diagnostic"
+            element={
+              <RequireLearner>
+                <Diagnostic />
+              </RequireLearner>
+            }
+          />
+          <Route
+            path="/path"
+            element={
+              <RequireLearner>
+                <Path />
+              </RequireLearner>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={
+              <RequireLearner>
+                <Dashboard />
+              </RequireLearner>
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+        </ErrorBoundary>
+      </Layout>
+      <ChatPanel />
+    </Router>
   )
 }

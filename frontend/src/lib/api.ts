@@ -6,6 +6,10 @@
  * carries the HTTP status, which is what lets the UI distinguish "the backend
  * is down, show a retry state" from "this learner has no path yet, show an
  * empty state".
+ *
+ * The types below mirror `backend/app/schemas.py` exactly. They are hand-kept
+ * rather than generated: the contract is small, and a hand-written type that
+ * disagrees with the server fails loudly in `npm run build`.
  */
 
 export const API_BASE: string =
@@ -22,6 +26,11 @@ export class ApiError extends Error {
     this.status = status
     this.detail = detail
   }
+
+  /** True when the backend could not be reached at all. */
+  get isOffline(): boolean {
+    return this.status === 0
+  }
 }
 
 type RequestOptions = {
@@ -37,7 +46,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
     response = await fetch(`${API_BASE}${path}`, {
       method,
       signal,
-      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      headers: body === undefined ? undefined : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch (cause) {
@@ -66,7 +75,7 @@ function safeJson(text: string): unknown {
 }
 
 /* ------------------------------------------------------------------ */
-/* Health                                                              */
+/* Types                                                               */
 /* ------------------------------------------------------------------ */
 export type Health = {
   status: 'ok' | 'degraded'
@@ -78,4 +87,252 @@ export type Health = {
   graph_tracks: number
 }
 
-export const getHealth = () => request<Health>('/health')
+export type ProfileDraft = {
+  interests?: string[] | null
+  experience_level?: 'beginner' | 'intermediate' | 'advanced' | null
+  completed_skills?: string[] | null
+  goal_text?: string | null
+  hours_per_week?: number | null
+  target_date?: string | null
+  format_pref?: 'video' | 'text' | 'interactive' | 'any' | null
+  cost_pref?: 'free' | 'any' | null
+  language?: string | null
+  low_bandwidth?: boolean | null
+}
+
+export type IntakeMessage = {
+  session_id: string
+  assistant_message: string
+  profile: ProfileDraft
+  ready: boolean
+  llm_degraded: boolean
+}
+
+export type GoalCandidate = { skill_id: string; name: string; track: string; score: number }
+
+export type IntakeCommit = {
+  learner_id: number
+  goal_node_ids: string[]
+  goal_names: string[]
+  candidates: GoalCandidate[]
+  seeded_mastery: Record<string, number>
+  llm_degraded: boolean
+}
+
+export type DiagnosticQuestion = {
+  done: boolean
+  quiz_item_id?: number | null
+  skill_id?: string | null
+  skill_name?: string | null
+  question?: string | null
+  options: string[]
+  asked: number
+  max_questions: number
+  confidence: number
+  llm_degraded: boolean
+}
+
+export type DiagnosticAnswer = {
+  correct: boolean
+  skill_id: string
+  new_score: number
+  confidence: number
+  asked: number
+  done: boolean
+}
+
+export type Resource = {
+  id: string
+  title: string
+  provider: string
+  url: string
+  format: string
+  cost: string
+  duration_hours: number
+  level: string
+  rating: number
+  description: string
+}
+
+export type Provenance = {
+  skill: string
+  skill_name?: string
+  track?: string
+  why_needed?: { goal: string; path_to_goal: string[]; is_goal: boolean }
+  your_level?: { score: number; source: string; evidence_q_ids: number[]; threshold: number }
+  why_this_resource?: {
+    resource_id: string | null
+    title: string | null
+    provider: string | null
+    beat_alternatives: number
+    score: number | null
+    reasons: string[]
+  }
+  placement?: { week: number; est_hours: number; unlocks: string[]; unlock_count: number }
+  milestone?: { track: string; questions: number; covers_up_to: string }
+}
+
+export type PathItem = {
+  id: number | null
+  order_index: number
+  week_number: number
+  skill_id: string
+  skill_name: string
+  kind: 'resource' | 'milestone'
+  status: 'pending' | 'in_progress' | 'done' | 'skipped'
+  est_hours: number
+  course: Resource | null
+  alternatives: Resource[]
+  provenance: Provenance
+  rationale_text: string
+}
+
+export type LearningPath = {
+  learner_id: number
+  path_id: number | null
+  version: number
+  status: string
+  total_hours: number
+  finish_week: number
+  hours_per_week: number
+  goal_node_ids: string[]
+  goal_names: string[]
+  items: PathItem[]
+  llm_degraded: boolean
+}
+
+export type WhatIf = {
+  hours_per_week: number
+  finish_week: number
+  total_hours: number
+  item_count: number
+  weeks: { week: number; allocated_hours: number; item_count: number; skills: string[] }[]
+  persisted: boolean
+}
+
+export type PathDiff = {
+  from_version: number
+  to_version: number
+  added: { skill_id: string; kind: string; week: number }[]
+  removed: { skill_id: string; kind: string; week: number }[]
+  moved_weeks: { skill_id: string; from_week: number; to_week: number }[]
+  resource_swapped: { skill_id: string; from_course_id: string; to_course_id: string }[]
+  finish_week_delta: number
+  unchanged: boolean
+}
+
+export type PathEventType =
+  | 'milestone_failed'
+  | 'too_easy'
+  | 'too_hard'
+  | 'behind_schedule'
+  | 'goal_changed'
+  | 'resource_disliked'
+  | 'completed_item'
+
+export type PathEventResult = {
+  event: string
+  message: string
+  version: number
+  diff: PathDiff
+  options: string[]
+  llm_degraded: boolean
+}
+
+export type Dashboard = {
+  learner_id: number
+  goal_names: string[]
+  items_total: number
+  items_done: number
+  progress_pct: number
+  hours_done: number
+  hours_remaining: number
+  finish_week: number
+  current_week: number
+  mastery_radar: { track: string; mastery: number; skills: number; mastered: number }[]
+  milestones: { week: number; track: string; label: string; status: string }[]
+  next_actions: PathItem[]
+  activity: { id: number; type: string; payload: Record<string, unknown>; created_at: string }[]
+}
+
+export type GraphNode = {
+  id: string
+  name: string
+  track: string
+  difficulty: number
+  est_hours: number
+  mastery: number
+  source: string | null
+  in_path: boolean
+  is_goal: boolean
+  week: number | null
+}
+
+export type GraphPayload = {
+  nodes: GraphNode[]
+  edges: { source: string; target: string; in_path: boolean }[]
+}
+
+export type ChatReply = {
+  reply: string
+  citations: { title: string; url: string; skill: string }[]
+  llm_degraded: boolean
+}
+
+/* ------------------------------------------------------------------ */
+/* Endpoints                                                           */
+/* ------------------------------------------------------------------ */
+export const api = {
+  health: () => request<Health>('/health'),
+
+  intakeMessage: (message: string, sessionId: string | null) =>
+    request<IntakeMessage>('/api/intake/message', {
+      method: 'POST',
+      body: { message, session_id: sessionId },
+    }),
+
+  intakeCommit: (sessionId: string | null, profile?: ProfileDraft, displayName = 'Learner') =>
+    request<IntakeCommit>('/api/intake/commit', {
+      method: 'POST',
+      body: { session_id: sessionId, profile, display_name: displayName },
+    }),
+
+  nextQuestion: (learnerId: number) =>
+    request<DiagnosticQuestion>(`/api/diagnostic/next/${learnerId}`),
+
+  answerQuestion: (quizItemId: number, chosenIndex: number | null, dontKnow = false) =>
+    request<DiagnosticAnswer>('/api/diagnostic/answer', {
+      method: 'POST',
+      body: { quiz_item_id: quizItemId, chosen_index: chosenIndex, dont_know: dontKnow },
+    }),
+
+  generatePath: (learnerId: number) =>
+    request<LearningPath>(`/api/path/generate/${learnerId}`, { method: 'POST' }),
+
+  getPath: (learnerId: number, version?: number) =>
+    request<LearningPath>(
+      `/api/path/${learnerId}${version === undefined ? '' : `?version=${version}`}`,
+    ),
+
+  whatIf: (learnerId: number, hoursPerWeek: number) =>
+    request<WhatIf>('/api/path/whatif', {
+      method: 'POST',
+      body: { learner_id: learnerId, hours_per_week: hoursPerWeek },
+    }),
+
+  sendEvent: (learnerId: number, type: PathEventType, payload: Record<string, unknown> = {}) =>
+    request<PathEventResult>('/api/path/event', {
+      method: 'POST',
+      body: { learner_id: learnerId, type, payload },
+    }),
+
+  diff: (learnerId: number, from: number, to: number) =>
+    request<PathDiff>(`/api/path/${learnerId}/diff/${from}/${to}`),
+
+  dashboard: (learnerId: number) => request<Dashboard>(`/api/dashboard/${learnerId}`),
+
+  graph: (learnerId: number) => request<GraphPayload>(`/api/graph/${learnerId}`),
+
+  chat: (learnerId: number, message: string) =>
+    request<ChatReply>(`/api/chat/${learnerId}`, { method: 'POST', body: { message } }),
+}

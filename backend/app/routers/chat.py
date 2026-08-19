@@ -2,7 +2,10 @@
 
 The context handed to the model is assembled here from database rows and nothing
 else: this learner's goal, their weeks, the resources actually bound to their
-path, and their measured mastery. The model is instructed to answer only from
+path, their measured mastery, and -- for each step -- the dependency chain that
+made it necessary. That last part matters: without it the assistant could only
+say *what* is in the path, and "why is linear algebra in my path?" is the
+question learners actually ask. The model is instructed to answer only from
 that block and to say so plainly when the answer is not in it.
 
 Two consequences worth stating explicitly. A question about a course that is not
@@ -61,9 +64,13 @@ def _context_block(learner, items: list[PathItem], version: int) -> tuple[str, l
         name = graph.require(item.skill_id).name if item.skill_id in graph else item.skill_id
         resource = catalog.get(item.course_id) if item.course_id else None
         title = resource.title if resource else "no resource bound"
+        chain = (item.provenance.get("why_needed") or {}).get("path_to_goal") or []
+        because = f"; needed because it leads to {' -> '.join(chain[:3])}" if chain else ""
+        level = (item.provenance.get("your_level") or {}).get("score")
+        measured = f"; your level {level:.0%}" if isinstance(level, (int, float)) else ""
         lines.append(
             f"  week {item.week_number} [{item.status}] {name} ({item.kind}) "
-            f"-- {title}, {item.est_hours:g}h"
+            f"-- {title}, {item.est_hours:g}h{because}{measured}"
         )
         if resource:
             citations.append({"title": resource.title, "url": resource.url, "skill": name})

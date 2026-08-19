@@ -97,9 +97,14 @@ def persist_mastery(db: Session, learner_id: int, table: MasteryTable) -> None:
     db.commit()
 
 
-def gap_for(graph: SkillGraph, learner: Learner, table: MasteryTable) -> set[str]:
+def required_for(graph: SkillGraph, learner: Learner) -> set[str]:
+    """Every skill this learner's goal transitively needs."""
     goals = [g for g in learner.goal_node_ids if g in graph]
-    return table.gap(graph.required_for(goals)) if goals else set()
+    return graph.required_for(goals) if goals else set()
+
+
+def gap_for(graph: SkillGraph, learner: Learner, table: MasteryTable) -> set[str]:
+    return table.gap(required_for(graph, learner))
 
 
 # --------------------------------------------------------------------------- #
@@ -159,8 +164,9 @@ def next_question(
         select(QuizItem).where(QuizItem.learner_id == learner_id, QuizItem.kind == "diagnostic")
     ).all()
     answered = [q for q in asked_items if q.chosen_index is not None or q.dont_know]
-    gap = gap_for(graph, learner, table)
-    current_confidence = confidence(table, gap, graph)
+    required = required_for(graph, learner)
+    gap = table.gap(required)
+    current_confidence = confidence(table, required, graph)
 
     pending = next((q for q in asked_items if q.chosen_index is None and not q.dont_know), None)
     if pending is not None:
@@ -256,8 +262,9 @@ def answer(
     ).all()
     answered_count = sum(1 for q in answered if q.chosen_index is not None or q.dont_know)
 
-    gap = gap_for(graph, learner, table)
-    new_confidence = confidence(table, gap, graph)
+    required = required_for(graph, learner)
+    gap = table.gap(required)
+    new_confidence = confidence(table, required, graph)
     done = (
         answered_count >= settings.diagnostic_max_questions
         or new_confidence >= settings.diagnostic_confidence_target
