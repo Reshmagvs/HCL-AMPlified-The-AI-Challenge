@@ -1,0 +1,200 @@
+"""Goal resolution: free text in, skill-graph node ids out.
+
+Neither half of this can be done alone.
+
+A pure embedding search returns the *most similar* node, which for "I want to
+build websites" is as likely to be `web.css` as `web.fullstack_engineer` --
+similarity has no notion of which node is a destination. A pure LLM invents node
+ids that do not exist, and an invented id is worse than a wrong one because it
+fails downstream instead of visibly.
+
+So: **retrieve, then constrain.** Cosine search over the precomputed skill matrix
+produces eight candidates; the model chooses one to three *from that list, by id*;
+and any id not present verbatim in the candidate list is rejected outright. The
+model can only ever pick something real. With no provider at all, the top cosine
+hit is used, which is less nuanced but always valid.
+
+The same retrieve-then-threshold approach maps a learner's claimed prior
+knowledge ("I know Python and git") onto node ids, except that no model is
+involved and the resulting mastery is capped at 0.4 -- a claim shortens the
+diagnostic, it never replaces it.
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+from typing import Any
+
+import numpy as np
+from pydantic import BaseModel, Field
+
+from app.core import retrieval
+from app.core.skill_graph import SkillGraph, load_graph
+from app.llm import get_provider
+from app.llm.base import ProviderUnavailable, SchemaViolation, call_with_schema
+from app.llm.prompts import GOAL_RESOLUTION
+
+logger = logging.getLogger(__name__)
+
+CANDIDATE_COUNT = 8
+MAX_GOAL_NODES = 3
+CLAIM_MATCH_FLOOR = 0.20
+CLAIM_MATCH_MARGIN = 1.35
+_WORD_RE = re.compile(r"[a-z0-9+#.]+")
+
+
+class GoalSelection(BaseModel):
+    skill_ids: list[str] = Field(default_factory=list, max_length=6)
+    reason: str = ""
+
+
+def _lexical_scores(graph: SkillGraph, text: str) -> dict[str, float]:
+    """Token-overlap fallback for when no embedding matrix is available."""
+    wanted = set(_WORD_RE.findall(text.lower()))
+    if not wanted:
+        return {}
+    scores: dict[str, float] = {}
+    for node in graph.nodes.values():
+        haystack = set(_WORD_RE.findall(f"{node.name} {node.description} {' '.join(node.keywords)}".lower()))
+        overlap = len(wanted & haystack)
+        if overlap:
+            scores[node.id] = overlap / (len(wanted) ** 0.5)
+    return scores
+
+
+def embed_query(text: str) -> np.ndarray | None:
+    """Embed one string with the active provider, or None if it is unavailable."""
+    try:
+        return np.asarray(get_provider().embed(text), dtype=np.float32)
+    except (ProviderUnavailable, ValueError) as exc:
+        logger.info("query embedding unavailable: %s", str(exc)[:120])
+        return None
+
+
+def candidate_skills(goal_text: str, limit: int = CANDIDATE_COUNT) -> list[dict[str, Any]]:
+    """The shortlist a model is allowed to choose from, best first."""
+    graph = load_graph()
+    if not graph:
+        return []
+
+    matrices = retrieval.load_matrices()
+    ranked: list[tuple[str, float]] = []
+    query = embed_query(goal_text) if matrices["skills"] is not None else None
+
+    if query is not None and query.shape[0] == matrices["skills"].shape[1]:
+        hits = retrieval.cosine_search(query, matrices["skills"], limit * 2)
+        ranked = [(matrices["skill_ids"][row], score) for row, score in hits]
+    else:
+        lexical = _lexical_scores(graph, goal_text)
+        ranked = sorted(lexical.items(), key=lambda kv: (-kv[1], kv[0]))[: limit * 2]
+
+    # Prefer nodes that are plausible destinations: deeper nodes gate less and
+    # sit further from the foundations, which is what a stated goal usually means.
+    scored = [
+        (skill_id, score + 0.02 * graph.depth(skill_id))
+        for skill_id, score in ranked
+        if skill_id in graph
+    ]
+    scored.sort(key=lambda kv: (-kv[1], kv[0]))
+
+    return [
+        {
+            "skill_id": skill_id,
+            "name": graph.require(skill_id).name,
+            "track": graph.require(skill_id).track,
+            "score": round(float(score), 4),
+        }
+        for skill_id, score in scored[:limit]
+    ]
+
+
+def _candidate_block(candidates: list[dict[str, Any]]) -> str:
+    return "\n".join(
+        f"  - {c['skill_id']} | {c['name']} | track: {c['track']}" for c in candidates
+    )
+
+
+def resolve_goal(goal_text: str) -> tuple[list[str], list[dict[str, Any]], bool]:
+    """Return (chosen node ids, the candidate shortlist, whether we degraded)."""
+    candidates = candidate_skills(goal_text)
+    if not candidates:
+        return [], [], True
+
+    allowed = {c["skill_id"] for c in candidates}
+    fallback = [candidates[0]["skill_id"]]
+
+    provider = get_provider()
+    if not provider.available():
+        return fallback, candidates, True
+
+    prompt = GOAL_RESOLUTION.format(goal_text=goal_text, candidates=_candidate_block(candidates))
+    try:
+        selection = call_with_schema(provider, prompt, GoalSelection, temperature=0.1, max_tokens=400)
+    except (SchemaViolation, ProviderUnavailable) as exc:
+        logger.info("goal resolution degraded: %s", str(exc)[:140])
+        return fallback, candidates, True
+
+    chosen = [s for s in dict.fromkeys(selection.skill_ids) if s in allowed][:MAX_GOAL_NODES]
+    rejected = [s for s in selection.skill_ids if s not in allowed]
+    if rejected:
+        # A hard rejection, not a repair: an id outside the shortlist is exactly
+        # the hallucination this design exists to make impossible.
+        logger.warning("rejected off-list goal ids from the model: %s", rejected)
+
+    return (chosen or fallback), candidates, not chosen
+
+
+def _is_unambiguous(best: float, runner_up: float) -> bool:
+    """Accept a claim only when one node is clearly ahead of the next.
+
+    An absolute cosine threshold does not transfer between providers -- the mock
+    hashing vectoriser and Gemini put "Python Basics" at 0.47 and 0.83 against
+    the same node. A *relative* margin does transfer: if the best match is not
+    comfortably ahead of the runner-up, the claim was too vague to attach to any
+    single skill, and dropping it is safer than seeding mastery for a skill the
+    learner never mentioned.
+    """
+    if best < CLAIM_MATCH_FLOOR:
+        return False
+    return runner_up <= 0.0 or best / runner_up >= CLAIM_MATCH_MARGIN
+
+
+def match_claimed_skills(claims: list[str]) -> dict[str, float]:
+    """Map plain-English claims onto node ids, with the similarity that matched.
+
+    Deliberately strict: an unrecognised claim is dropped rather than attached to
+    the nearest node, because a wrong self-report seeds mastery for a skill the
+    learner never mentioned.
+    """
+    graph = load_graph()
+    if not graph or not claims:
+        return {}
+
+    matrices = retrieval.load_matrices()
+    matched: dict[str, float] = {}
+
+    for claim in claims:
+        text = claim.strip()
+        if len(text) < 2:
+            continue
+        best_id, best_score, runner_up = None, 0.0, 0.0
+
+        query = embed_query(text) if matrices["skills"] is not None else None
+        if query is not None and query.shape[0] == matrices["skills"].shape[1]:
+            hits = retrieval.cosine_search(query, matrices["skills"], 2)
+            if hits:
+                best_id, best_score = matrices["skill_ids"][hits[0][0]], hits[0][1]
+                runner_up = hits[1][1] if len(hits) > 1 else 0.0
+        else:
+            lexical = _lexical_scores(graph, text)
+            ordered = sorted(lexical.items(), key=lambda kv: (-kv[1], kv[0]))
+            if ordered:
+                best_id, best_score = ordered[0]
+                runner_up = ordered[1][1] if len(ordered) > 1 else 0.0
+
+        if best_id and _is_unambiguous(best_score, runner_up):
+            matched[best_id] = max(matched.get(best_id, 0.0), round(float(best_score), 4))
+        else:
+            logger.debug("claim %r was too ambiguous to match (best %.3f)", text, best_score)
+    return matched
