@@ -23,6 +23,7 @@ from app.config import get_settings  # noqa: E402
 from app.core import questions, retrieval, skill_graph  # noqa: E402
 from app.core.embeddings import get_embedder  # noqa: E402
 from app.db import init_db  # noqa: E402
+from app.llm import get_provider  # noqa: E402
 from app.logging_config import configure_logging  # noqa: E402
 
 logger = logging.getLogger("seed")
@@ -43,12 +44,21 @@ def main() -> int:
     embedder.embed_batch(["warm up"])
     warm = time.perf_counter() - started
 
+    # Load the language model into memory now. A cold load of a 3B model took
+    # 68 seconds on the development machine, and Ollama unloads it after five
+    # idle minutes -- so without this the first learner to ask for a new subject
+    # waits out the load with no idea why.
+    provider = get_provider()
+    if hasattr(provider, "warm"):
+        provider.warm()
+
     matrices = retrieval.load_matrices()
     logger.info(
         "ready: %d skills, %d tracks, %d resources, %d questions, "
-        "embedder=%s (%.1fs), text=%s",
+        "embedder=%s (%.1fs), text=%s%s",
         len(graph), len(graph.tracks), len(catalog), len(bank),
-        embedder.name, warm, settings.llm_provider,
+        embedder.name, warm, provider.name,
+        "" if provider.available() else " (unavailable -- new subjects cannot be built)",
     )
 
     if not graph:

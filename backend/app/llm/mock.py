@@ -47,7 +47,14 @@ class MockProvider(LLMProvider):
         return True
 
     # -- generation ---------------------------------------------------------
-    def complete(self, prompt: str, *, temperature: float = 0.2, max_tokens: int = 2048) -> str:
+    def complete(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+        json_schema: dict | None = None,
+    ) -> str:
         """Dispatch on the marker each prompt template carries."""
         handlers = (
             (prompts.MARK_INTAKE, self._intake),

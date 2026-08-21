@@ -3,13 +3,21 @@
 **Learning is a dependency graph, not a search result.**
 
 Lodestar takes a goal in plain English, measures what you actually know with a
-short placement check, works out the shortest valid route to that goal through a
-curated skill graph, packs it into the hours you really have each week, attaches
-a traceable reason to every step, and re-plans the moment anything changes —
-using only real, HTTP-verified, almost entirely free resources.
+short placement check, works out the shortest valid route to that goal, packs it
+into the hours you really have each week, attaches a traceable reason to every
+step, and re-plans the moment anything changes — using only real, HTTP-verified,
+almost entirely free resources.
 
-**It runs entirely on your machine.** No API key, no account, no quota, no
-network calls at request time.
+**Ask it for a subject it has never seen and it builds one.** The curated graph
+covers 152 skills across six technology tracks. Ask for quantum computing,
+organic chemistry or a class 12 board exam and it says so plainly, then designs
+a prerequisite structure for the subject, searches the live web for material,
+fetches every page before using it, and merges the result into the same graph
+the planner already works on. Nothing downstream knows the difference.
+
+**It runs entirely on your machine.** No API key, no account, no quota. The only
+network use is looking for learning material the first time a new subject is
+asked for.
 
 ---
 
@@ -47,25 +55,77 @@ Nothing in the critical path needs a hosted service.
 |---|---|---|
 | Search and matching | `bge-small-en-v1.5` locally through ONNX Runtime, 384-dim | No, after a one-time model download |
 | Sequencing, scheduling, gap analysis | Ordinary Python. Graph traversal and bin-packing | No |
-| Placement questions | A bank of 144 items, generated once offline and committed | No |
+| Deciding whether a subject is already covered | Two measured signals, no model — see below | No |
+| Placement questions, curated subjects | A bank of 144 items, generated once offline and committed | No |
 | Explanations | Provenance computed as data, rendered from a template | No |
-| Assistant answers | Rule-based, resolved from your own plan rows | No |
-| Nicer phrasing (optional) | Ollama locally, or Gemini if you have a key | Only if enabled |
+| Assistant answers | Rule-based from your own plan rows, phrased by a model when one is fast enough | No |
+| **Designing a new subject** | A local model proposes structure only — never a fact, never a link | Model is local; the search is not |
+| **Finding material for a new subject** | Live search, then every page fetched and checked | Yes, once per subject |
 
-The last row is the only place a language model appears at request time, and the
-product is fully functional without it. That is the point of the design, not a
-fallback bolted on afterwards.
+Everything above the bold rows works with no model at all. The bold rows are the
+open-world half, and they are the only thing that needs one.
 
-### Optional: nicer wording with a local model
+### The local model
 
 ```bash
-# https://ollama.com, then:
-ollama pull llama3.2:1b
+# https://ollama.com/download, then:
+ollama pull qwen2.5:3b-instruct
 ```
 
-Set `LLM_PROVIDER=auto` (the default) and Lodestar uses it if the daemon is
-running, or stays on templates if not. A 1B model on a four-core laptop CPU is
-comfortable for intake replies and chat answers.
+Set `LLM_PROVIDER=auto` (the default) and Lodestar uses it when the daemon is
+running and stays deterministic when it is not.
+
+The default model was chosen by measurement on a four-core Ryzen 7 3700U with no
+usable GPU, not by reputation:
+
+| Model | Throughput | Verdict |
+|---|---|---|
+| `qwen2.5:0.5b` | 25.7 tok/s | Too weak to produce a coherent prerequisite structure |
+| **`qwen2.5:3b-instruct`** | **11.0 tok/s** | **The default** |
+| `qwen2.5:7b-instruct-q4_K_M` | 4.8 tok/s | Better answers; 119 s just to load. Unusable here |
+
+Two things make a model this small good enough to depend on.
+
+**Decoding is constrained by a JSON schema, not asked politely in words.** Told
+in English to return a syllabus, this model returned `{"topic": "quantum-
+computing", "skills": []}` — valid, parseable, useless. Given the same request
+as a schema with `minItems`, it produced a full syllabus with a sensible
+dependency structure. That one change is the difference between the local model
+being a toy and being the thing the product runs on.
+
+**Slow work is never put in front of a learner.** Providers report their
+measured throughput and callers do the arithmetic. Narrating forty path items is
+worth doing at 200 tok/s and absurd at 5, so it happens on a hosted model and is
+skipped on this one — the reason text is computed deterministically either way.
+Building a subject takes about two minutes here, so it runs as a background job
+with real progress rather than inside a request.
+
+If the model is not installed, everything except *building a new subject* works
+exactly as before, and the interface says so rather than silently degrading.
+
+### Where new material comes from
+
+Discovery is a chain of sources, tried in order, each with its own health state.
+
+| Source | What it is | Why it is there |
+|---|---|---|
+| `wikimedia` | The MediaWiki search API across Wikipedia, Wikibooks and Wikiversity | A documented public API with a published access policy and no key. Its coverage of academic subjects is close to total, so it is the source that can be *relied* on |
+| `duckduckgo` | The open web, scraped from the Lite endpoint | Where tutorials and exercise sets actually live. Best-effort: paced, and stood down for a cooldown the moment it starts refusing |
+
+The first version used DuckDuckGo alone. It worked beautifully for about forty
+queries and then returned HTTP 202 with an empty challenge page for everything,
+and stayed that way through a cooldown. A product built on one scraped endpoint
+stops working under exactly the load that means people are using it, so a
+blocked source now degrades the result instead of emptying it.
+
+**Nothing found is taken on trust.** A search result is a claim that a page
+exists. Every URL is fetched before it can be used; the title, description,
+provider, format and cost are read from the page that actually answered, never
+from the search snippet and never from a model. Pages that answer 200 with a bot
+wall are discarded by a content-length gate calibrated on real pages. Reading
+time is computed from a measured word count. Nothing carries a rating, because
+nobody has rated these pages and inventing a number would be fabricating a
+statistic about a real third party.
 
 ---
 
@@ -99,8 +159,9 @@ problem.
 ├──────────────────────────────────────────────────────────────────────┤
 │  llm/    ← optional phrasing only. mock · ollama · gemini             │
 ├──────────────────────────────────────────────────────────────────────┤
-│  data/   skills.json · courses.json · questions.json                  │
+│  data/   skills.json · courses.json · questions.json    ← the seed    │
 │          *_embeddings.*.npy · personas.json                           │
+│  data/generated/   subjects discovered at runtime       ← the overlay │
 │  SQLite  Learner · Mastery · LearningPath · PathItem · Event · Quiz   │
 └──────────────────────────────────────────────────────────────────────┘
 ```
@@ -135,11 +196,67 @@ hard-filters-first ordering is what makes "free only" actually mean free only.
 Step 6's constraint is what makes a hallucinated justification structurally
 impossible rather than merely unlikely.
 
+### When the goal is not in the graph
+
+Steps 1–7 assume the goal resolves to a node. The interesting question is what
+happens when it does not, and the old answer was the worst possible one: cosine
+search returned the *nearest* node, so "quantum computing" quietly became a
+programming topic and the learner got a confident plan for the wrong subject.
+Nearest-neighbour over a closed set has no way to say "I don't know this".
+
+So coverage is decided first, by two signals, because measurement showed neither
+works alone.
+
+*Similarity* answers "is something like this here". Scored against the curated
+graph, "I want to build websites" (covered) sits at 0.664 and "I want to
+understand quantum computing" (not covered) at 0.657. No threshold splits them. A
+z-score against the graph's own spread was tried too, and ranked "medieval
+european history" above "cybersecurity penetration testing".
+
+*Lexical familiarity* answers "does this curriculum even use these words",
+weighted by inverse document frequency so that rare words count and generic ones
+do not. Unweighted, "civil engineering structural analysis" read as covered
+because the graph uses "engineering" and "analysis". Weighted, quantum
+computing, organic chemistry, medieval history and piano all score near zero.
+
+Together they are right on 17 of the 18 goals used to check them, in about a
+third of a second, with no model call. The one miss calls "music theory and
+composition" covered, because "theory" and "composition" are both rare words the
+graph happens to use. That residual error is caught by the interface rather than
+by more arithmetic: the learner is told which skill was matched and offered a
+button to build their subject properly instead. A wrong guess a person can see
+and overrule is worth more than a confident one they cannot.
+
+When the subject is genuinely new:
+
+```
+POST /api/topics/build          (returns immediately; poll GET /api/topics/build)
+
+1. DESIGN     the model proposes 8–12 skills and, for each, which earlier
+              skills it depends on. Structure only — never a fact, never a link.
+              A prerequisite may only reference an EARLIER index, so a cycle is
+              not expressible rather than merely rejected.
+2. SEARCH     one live query per skill, built from the skill's own keywords
+3. VERIFY     every URL fetched; non-2xx, non-HTML, and bot walls discarded;
+              title, description, provider, format and cost read off the page
+4. EMBED      new skills and resources vectorised locally
+5. MERGE      written to data/generated/ and layered onto the graph. The seed
+              is never modified, and a node with an unresolvable prerequisite is
+              dropped rather than allowed to break the graph for everyone
+6. QUESTIONS  placement questions written in the background, one batched call
+```
+
+About two minutes on a laptop CPU, once, ever — the result is shared, so the
+second person to ask the same thing waits 80 ms.
+
 ### Where the AI is, and where it deliberately is not
 
 | Component | Technique | Why not something heavier |
 |---|---|---|
 | Goal → skill nodes | Local embedding retrieval, then constrained selection from a fixed shortlist | A model alone invents nodes that do not exist; similarity alone misses intent |
+| Is this subject covered? | IDF-weighted lexical familiarity + calibrated similarity | The 3B model got 10/12 and took 15 s; the arithmetic gets 17/18 in 0.3 s |
+| **New subject → prerequisite structure** | **Schema-constrained generation, then structural validation** | **This is the one thing only a language model can do. It proposes; the code decides what is admissible** |
+| New subject → material | Live search, then HTTP verification of every page | A model asked for links invents them. Fetching is the only way to know |
 | Learner state | Adaptive selection by `uncertainty × downstream unlocks` | A fixed 20-question quiz wastes the learner's time |
 | Resource binding | Hybrid: semantic relevance + rule-based feature scoring | Pure semantics ignores cost, format and level — most of what a learner cares about |
 | **Sequencing** | **Topological sort with a weighted tie-break** | **Not an ML problem. Using ML here would be worse and unexplainable** |
@@ -153,6 +270,10 @@ impossible rather than merely unlikely.
 | Endpoint | Purpose |
 |---|---|
 | `GET /health` | status, provider, embedder, catalogue size, graph size, question bank |
+| `GET /api/topics/coverage` | Is this goal already taught? Fast enough to call while typing |
+| `POST /api/topics/build` | Start building a subject; returns immediately. `force` overrides a coverage verdict |
+| `GET /api/topics/build` | Progress: stage, detail, fraction, elapsed |
+| `GET /api/topics/sources` | Which discovery sources are answering |
 | `POST /api/intake/message` | assistant reply + partial profile + `ready` |
 | `POST /api/intake/commit` | creates the learner, resolves the goal to node ids |
 | `GET /api/diagnostic/next/{lid}` | next question, or `{done: true}` |
@@ -304,6 +425,20 @@ network.
 
 An honest account, because the boundaries are as informative as the features.
 
+- **A discovered subject is only as good as a 3B model's idea of it.** The
+  structure is validated — acyclic, in range, deduplicated — but nobody checks
+  that "Quantum Circuit" really does depend on "Quantum Gates". For a curated
+  track that judgement was made by a person; for a discovered one it was not.
+- **Coverage detection is right 17 times out of 18 on a small sample.** Eighteen
+  goals is a validation set, not a benchmark. It calls "music theory and
+  composition" covered. The interface exposes the verdict and offers an
+  override, which is the actual mitigation.
+- **Discovery leans on Wikimedia when DuckDuckGo is blocked**, which it often
+  is. Wikipedia and Wikibooks are excellent references and poor exercise sets, so
+  a maths subject built during a block gets explanation without practice.
+- **A build takes about two minutes on a CPU** — roughly 80 s of it generation at
+  5 tok/s. It is a background job with real progress and the result is cached
+  forever, but the first person to ask does wait.
 - **The skill graph is hand-authored and therefore opinionated.** 152 nodes and
   255 edges curated by one person. Several edges are defensible rather than
   incontestable — `prog.numpy` requiring `math.linear_algebra`, for instance.
@@ -328,7 +463,12 @@ An honest account, because the boundaries are as informative as the features.
   you do not.
 - **The question bank is fixed.** Every learner sees the same wording for a given
   skill. That makes it reviewable and instant, but it also means a determined
-  person could memorise it.
+  person could memorise it. Questions for discovered skills are written by the
+  local model and are not position-balanced the way the committed 144 are.
+- **A brand-new subject cannot be placement-tested for its first minute or two.**
+  Its questions are still being written, so the check ends having asked nothing
+  and the plan assumes you are starting fresh. The interface says exactly that
+  rather than claiming you have been placed.
 - **Deployed state is ephemeral.** A Hugging Face Space wipes its disk on
   rebuild, so learner profiles reset. Point `DATABASE_URL` at hosted Postgres if
   that matters.

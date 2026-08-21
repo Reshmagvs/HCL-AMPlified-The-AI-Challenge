@@ -12,3 +12,4 @@ httpx==0.28.1
 google-genai==0.5.0
 pytest==8.3.4
 pytest-asyncio==0.25.2
+tldextract==5.3.2

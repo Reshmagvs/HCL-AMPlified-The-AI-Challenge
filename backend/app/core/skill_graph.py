@@ -272,18 +272,71 @@ def load_graph_from(path: Path) -> SkillGraph:
     return build_graph(raw)
 
 
-@lru_cache(maxsize=1)
-def load_graph() -> SkillGraph:
-    """Load and validate data/skills.json exactly once per process."""
+def curated_skills() -> list[dict[str, Any]]:
+    """The hand-verified seed, exactly as checked into git."""
     target = get_settings().data_dir / "skills.json"
     if not target.exists():
         logger.warning("skills.json not found at %s -- serving an empty graph", target)
+        return []
+    return json.loads(target.read_text(encoding="utf-8"))
+
+
+def _merge_generated(curated: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Layer discovered topics on top of the seed, seed winning on any clash.
+
+    A generated node whose prerequisites do not all resolve is dropped rather
+    than allowed to raise: the overlay is machine-written, and one bad topic
+    must not take down a graph that serves every other learner. The drop is
+    logged with the offending ids so it can be diagnosed, and repeated until the
+    surviving set is closed -- dropping a node can orphan the ones after it.
+    """
+    from app.core import store
+
+    generated = store.load_skills()
+    if not generated:
+        return curated
+
+    known = {entry["id"] for entry in curated}
+    merged = list(curated)
+    for entry in generated:
+        if entry["id"] in known:
+            continue  # the curated seed is authoritative
+        known.add(entry["id"])
+        merged.append(entry)
+
+    while True:
+        resolvable = {entry["id"] for entry in merged}
+        broken = [
+            entry
+            for entry in merged
+            if any(prereq not in resolvable for prereq in entry.get("prerequisites", []))
+        ]
+        if not broken:
+            break
+        dropped = {entry["id"] for entry in broken}
+        logger.error("dropping generated skills with unresolved prerequisites: %s", sorted(dropped))
+        merged = [entry for entry in merged if entry["id"] not in dropped]
+
+    return merged
+
+
+@lru_cache(maxsize=1)
+def load_graph() -> SkillGraph:
+    """Load the curated seed plus the generated overlay, validated as one DAG."""
+    raw = _merge_generated(curated_skills())
+    if not raw:
         return SkillGraph(nodes={}, children={})
-    graph = load_graph_from(target)
+    try:
+        graph = build_graph(raw)
+    except GraphIntegrityError as exc:
+        # Fall back to the seed alone. A learner losing one discovered topic is
+        # recoverable; a 500 on every request is not.
+        logger.error("generated overlay breaks the graph (%s) -- loading the seed only", exc)
+        graph = build_graph(curated_skills())
     logger.info("skill graph loaded: %d nodes across %d tracks", len(graph), len(graph.tracks))
     return graph
 
 
 def reset_graph_cache() -> None:
-    """Drop the cached graph. Used by tests that swap the data directory."""
+    """Drop the cached graph. Called after an expansion and by tests."""
     load_graph.cache_clear()

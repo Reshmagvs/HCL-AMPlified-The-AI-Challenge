@@ -49,12 +49,39 @@ class LLMProvider(ABC):
     name: str = "base"
 
     @abstractmethod
-    def complete(self, prompt: str, *, temperature: float = 0.2, max_tokens: int = 2048) -> str:
-        """Return the model's raw text for ``prompt``."""
+    def complete(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+        json_schema: dict | None = None,
+    ) -> str:
+        """Return the model's raw text for ``prompt``.
+
+        ``json_schema`` asks the provider to *constrain decoding* to that shape
+        rather than merely request it in words. A three-billion-parameter model
+        told to return JSON will happily return ``{"skills": []}`` -- valid,
+        parseable and useless. Constrained to a schema with ``minItems``, the
+        same model produces a full syllabus. Providers that cannot constrain
+        may ignore it; the validation below still applies either way.
+        """
 
     @abstractmethod
     def available(self) -> bool:
         """True when a live call would plausibly succeed."""
+
+    def tokens_per_second(self) -> float:
+        """Observed generation speed, for callers deciding whether to bother.
+
+        Some work is worth doing at two hundred tokens a second and absurd at
+        three -- narrating forty path items, for instance, which is polish on
+        text that already exists. Rather than hardcode "skip this on local
+        models", callers ask how fast the provider actually is and do the
+        arithmetic. A provider that does not know reports a high figure, so the
+        default behaviour is unchanged.
+        """
+        return 1_000.0
 
 
 def extract_json(raw: str) -> str:
@@ -86,8 +113,15 @@ def call_with_schema(
     *,
     temperature: float = 0.1,
     max_tokens: int = 2048,
+    json_schema: dict | None = None,
 ) -> T:
     """Complete ``prompt`` and coerce the reply into ``schema``.
+
+    ``json_schema`` is the *decoding* constraint and is usually stricter than
+    ``schema``, which is the *validation* one. The split is deliberate:
+    generation should be pushed hard towards a complete answer, while validation
+    stays forgiving so a slightly malformed but usable reply is repaired rather
+    than thrown away.
 
     Raises ``SchemaViolation`` after one corrective retry, or
     ``ProviderUnavailable`` if the provider itself is down.
@@ -95,7 +129,13 @@ def call_with_schema(
     attempt_prompt = prompt
     last_error = ""
     for attempt in (1, 2):
-        raw = provider.complete(attempt_prompt, temperature=temperature, max_tokens=max_tokens)
+        # Passed only when there is a constraint to apply. A provider written
+        # against the earlier contract -- including any a deployment supplies --
+        # keeps working for every unconstrained call, which is most of them.
+        extra = {"json_schema": json_schema} if json_schema is not None else {}
+        raw = provider.complete(
+            attempt_prompt, temperature=temperature, max_tokens=max_tokens, **extra
+        )
         try:
             return schema.model_validate(json.loads(extract_json(raw)))
         except (json.JSONDecodeError, ValidationError, TypeError) as exc:

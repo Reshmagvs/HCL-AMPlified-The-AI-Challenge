@@ -45,10 +45,11 @@ def load_questions() -> dict[str, BankedQuestion]:
             "generating items at request time",
             target,
         )
-        return {}
+        raw = {}
+    else:
+        raw = json.loads(target.read_text(encoding="utf-8"))
 
-    raw = json.loads(target.read_text(encoding="utf-8"))
-    bank = {
+    bank: dict[str, BankedQuestion] = {
         skill_id: BankedQuestion(
             skill_id=skill_id,
             question=item["question"],
@@ -59,6 +60,20 @@ def load_questions() -> dict[str, BankedQuestion]:
         for skill_id, item in raw.items()
         if len(item.get("options", [])) == 4
     }
+    from app.core import store
+
+    # Generated questions fill gaps; a curated item always wins on the same id.
+    for skill_id, item in store.load_generated_questions().items():
+        if skill_id in bank or len(item.get("options", [])) != 4:
+            continue
+        bank[skill_id] = BankedQuestion(
+            skill_id=skill_id,
+            question=item["question"],
+            options=tuple(item["options"]),
+            answer_index=int(item["answer_index"]),
+            explanation=item.get("explanation", ""),
+        )
+
     logger.info("question bank loaded: %d items", len(bank))
     return bank
 

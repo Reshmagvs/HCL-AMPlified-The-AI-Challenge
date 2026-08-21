@@ -58,7 +58,14 @@ class GeminiProvider(LLMProvider):
             raise ProviderUnavailable("GEMINI_API_KEY is not set")
 
     # -- generation ---------------------------------------------------------
-    def complete(self, prompt: str, *, temperature: float = 0.2, max_tokens: int = 2048) -> str:
+    def complete(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+        json_schema: dict | None = None,
+    ) -> str:
         """One call, one retry on transient failure, then ``ProviderUnavailable``."""
         self._guard()
         config = {

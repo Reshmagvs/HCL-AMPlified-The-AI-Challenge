@@ -121,21 +121,48 @@ def intake_message(
 
 
 def _extract(session: IntakeSession, latest: str) -> tuple[dict[str, Any], str, bool]:
-    """Ask the model for structure; fall back to the deterministic extractor."""
-    provider = get_provider()
-    if provider.available():
-        prompt = INTAKE_EXTRACTION.format(
-            transcript=_transcript(session), profile=session.profile or "{}"
-        )
-        try:
-            result = call_with_schema(provider, prompt, ExtractionResult, temperature=0.2)
-            extracted = result.profile.model_dump(exclude_none=True)
-            return extracted, result.assistant_message.strip(), False
-        except (SchemaViolation, ProviderUnavailable) as exc:
-            logger.info("intake extraction degraded: %s", str(exc)[:140])
+    """Extract structure with both readers, and take the union of what they find.
 
+    The deterministic extractor always runs. It used to be a fallback for when
+    the model was unavailable, which quietly assumed that a model that *answers*
+    has read the message properly -- and a 3B model does not always. Asked to
+    read "organic chemistry for my class 12 board exam, 6 hours a week, free
+    only", it returned the hours, no goal at all, and then asked the learner
+    what their goal was. The rules had the goal the whole time.
+
+    So the rules provide the floor and the model may only add to it. A field the
+    model leaves empty is filled from the rules; a field the rules cannot see --
+    an implied experience level, a preference stated obliquely -- is where the
+    model earns its place. Neither can blank out what the other found.
+    """
     heuristic = extract_profile(latest, session.profile)
-    return heuristic, next_question(heuristic), True
+
+    provider = get_provider()
+    if not provider.available():
+        return heuristic, next_question(heuristic), True
+
+    prompt = INTAKE_EXTRACTION.format(
+        transcript=_transcript(session), profile=session.profile or "{}"
+    )
+    try:
+        result = call_with_schema(provider, prompt, ExtractionResult, temperature=0.2)
+    except (SchemaViolation, ProviderUnavailable) as exc:
+        logger.info("intake extraction degraded: %s", str(exc)[:140])
+        return heuristic, next_question(heuristic), True
+
+    merged = _merge(heuristic, result.profile.model_dump(exclude_none=True))
+    reply = result.assistant_message.strip()
+
+    # The model asks its own follow-up question, and it asks the wrong one when
+    # it missed a field the rules caught. Deferring to the deterministic question
+    # in that case is what stops the product asking for something it already has.
+    missed = [field for field in ("goal_text", "hours_per_week")
+              if heuristic.get(field) and not result.profile.model_dump().get(field)]
+    if missed:
+        logger.info("model missed %s during intake; using the rule-based reply", missed)
+        reply = next_question(merged)
+
+    return merged, reply, False
 
 
 @router.post("/commit", response_model=IntakeCommitResponse)

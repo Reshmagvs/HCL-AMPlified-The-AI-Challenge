@@ -132,6 +132,10 @@ export type DiagnosticQuestion = {
   max_questions: number
   confidence: number
   llm_degraded: boolean
+  /** confident | max_questions | nothing_to_measure | questions_not_ready */
+  done_reason?: string
+  /** Skills in the plan that have no question written yet. */
+  unmeasured?: number
 }
 
 export type DiagnosticAnswer = {
@@ -152,8 +156,41 @@ export type Resource = {
   cost: string
   duration_hours: number
   level: string
-  rating: number
+  rating: number | null
   description: string
+  /** Found by live search rather than curated. The URL, title, provider,
+   *  format and cost were read off the page that answered; duration and
+   *  level are estimates either way. */
+  discovered?: boolean
+  found_at?: string
+}
+
+/** What the curriculum makes of a goal, and what it would do about it. */
+export type Coverage = {
+  goal_text: string
+  covered: boolean
+  matched_skill_id: string | null
+  matched_skill_name: string | null
+  reason: string
+  already_built: boolean
+  topic: string | null
+  can_build: boolean
+  build_unavailable_reason: string
+}
+
+/** Progress of a topic being built. `status` is none | queued | running | done | failed. */
+export type BuildStatus = {
+  goal_text: string
+  status: 'none' | 'queued' | 'running' | 'done' | 'failed'
+  stage: string
+  detail: string
+  progress: number
+  topic: string
+  goal_skill_ids: string[]
+  skill_count: number
+  resource_count: number
+  error: string
+  elapsed: number
 }
 
 export type Provenance = {
@@ -288,6 +325,18 @@ export type ChatReply = {
 /* ------------------------------------------------------------------ */
 export const api = {
   health: () => request<Health>('/health'),
+
+  coverage: (goalText: string) =>
+    request<Coverage>(`/api/topics/coverage?goal_text=${encodeURIComponent(goalText)}`),
+
+  startBuild: (goalText: string, force = false) =>
+    request<BuildStatus>('/api/topics/build', {
+      method: 'POST',
+      body: { goal_text: goalText, force },
+    }),
+
+  buildStatus: (goalText: string) =>
+    request<BuildStatus>(`/api/topics/build?goal_text=${encodeURIComponent(goalText)}`),
 
   intakeMessage: (message: string, sessionId: string | null) =>
     request<IntakeMessage>('/api/intake/message', {

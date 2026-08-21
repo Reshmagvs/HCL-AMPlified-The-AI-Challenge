@@ -79,7 +79,7 @@ def _resource_reasons(
         reasons.append(
             f"{resource.duration_hours:g}h fits inside your {hours_per_week:g}h week"
         )
-    if resource.rating >= 4.5:
+    if resource.rating is not None and resource.rating >= 4.5:
         reasons.append(f"rated {resource.rating:g}")
     if prefs.low_bandwidth and resource.format != "video":
         reasons.append("light on bandwidth")

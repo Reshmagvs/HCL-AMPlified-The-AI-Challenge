@@ -265,3 +265,104 @@ throughout.
   Code-splitting the dashboard would help; not done.
 - **Deployed state is ephemeral** on a Hugging Face Space; learner profiles reset
   on rebuild.
+
+---
+
+## 16. Phase 12 — the open world, verified
+
+The system changed shape after the report above: it can now be asked for a
+subject nobody curated, and will build one. Everything in this section was
+executed against that build.
+
+| # | Item | Result |
+|---|---|---|
+| 16.1 | Backend suite, after expansion, discovery and extraction landed | **PASS** — 198 passed, 1 conditional skip, 62 s |
+| 16.2 | Frontend production build | **PASS** — 0 TypeScript errors, 634 kB / 187 kB gzipped |
+| 16.3 | Local model actually generating | **PASS** — `qwen2.5:3b-instruct`, 11.0 tok/s measured |
+| 16.4 | Coverage detection on 18 goals | **17/18**, 0.3 s, no model call |
+| 16.5 | Build "quantum computing" end to end | **PASS** — 9 skills, 119–145 s |
+| 16.6 | Build "organic chemistry" end to end | **PASS** — 159 s |
+| 16.7 | Second request for a built subject | **PASS** — 0.08 s from cache |
+| 16.8 | Every discovered URL reachable | **PASS** — 51/51 2xx, all free, all `rating: null` |
+| 16.9 | Journeys A–F, unchanged | **PASS** — 80/80 |
+| 16.10 | Evaluation harness, unchanged | **PASS** — 7/7, 0.97× gold |
+| 16.11 | Build flow driven through the real interface | **PASS** |
+
+### What the local model is doing, measured
+
+Ollama was installed to `D:\Ollama` (models under `D:\Ollama\models`; the C:
+drive had 4 GB free and was verified to hold no model store). Three models were
+timed on this machine before one was chosen:
+
+```
+qwen2.5:0.5b                 25.7 tok/s    7 s load    too weak to hold structure
+qwen2.5:3b-instruct          11.0 tok/s   68 s cold    chosen
+qwen2.5:7b-instruct-q4_K_M    4.8 tok/s  119 s load    better answers, unusable here
+```
+
+Asked in English for a syllabus, the 3B model returned
+`{"topic": "quantum-computing", "skills": []}` — 23 tokens, valid JSON, no
+content. The same request expressed as a JSON schema with `minItems` produced
+thirteen skills with a real dependency structure. Schema-constrained decoding is
+the difference between the local model being decorative and being load-bearing.
+
+### Discovered material is verified, not trusted
+
+Every URL a search returns is fetched before it is used, and the title,
+description, provider, format and cost are read off the response. Measured on
+real pages: four usable ones carried 9,825–184,792 characters of visible text,
+while two bot walls carried 228 and 17. The 1,200-character gate sits an order
+of magnitude clear of both. Khan Academy answers a bot check with HTTP 200 and
+the words "Client Challenge", which is why a status code alone is not accepted
+as proof of content.
+
+Nothing discovered carries a rating. `rating` is nullable end to end and the
+scorer treats absence as neutral — inventing a plausible 4.2 about a real third
+party is exactly the fabrication the brief forbids.
+
+### Bugs found in this pass, and their fixes
+
+- **A short resource made a skill quick.** A nine-skill quantum computing plan
+  finished in week 1, because scheduling took the resource's length capped by
+  the skill estimate — sensible for a curated multi-hour course, absurd for a
+  twenty-minute Wikipedia article. The skill estimate now bounds the schedule
+  from below too. The same plan finishes in week 8 across 45.5 hours.
+- **Enabling the local model made path generation take 5.5 minutes**, because
+  narration ran once per step at 5 tok/s. Narration is polish on a reason that
+  is already computed deterministically, so it now runs only when the projected
+  cost fits a latency budget. Back to 1.9 s.
+- **The placement check claimed "0 questions was enough"** when it had in fact
+  asked nothing, because a brand-new subject has no questions yet. The API now
+  reports why it stopped and the interface says so plainly.
+- **The test suite deleted the developer's built subjects.** `store.clear()` ran
+  around every expansion test while the overlay path was fixed at
+  `data/generated`. The path is now a setting, the suite points at
+  `tests/_test_generated`, and a regression test asserts the suite cannot
+  address a real installation.
+- **The model extracted hours but no goal, then asked for the goal.** Intake now
+  takes the union of the deterministic extractor and the model rather than
+  letting the model's answer replace it.
+- **A subject typed on its own yielded no goal at all.** "organic chemistry for
+  my class 12 board exam, 6 hours a week, free only" opens with the subject
+  instead of "I want to…", and the assistant then asked what the learner wanted
+  to study, having just been told. Fixed, with the obvious over-correction
+  caught by an existing test: the first version turned "hello there" into a
+  goal. A clause built entirely from conversational words is now rejected.
+- **"4 hours weekly" and "6 hrs/wk" were not recognised** as weekly budgets.
+
+`tests/test_text_profile.py` covers all three extraction fixes, including the
+cases that must *not* produce a goal.
+
+### Still open after this pass
+
+- The syllabus for a discovered subject is a 3B model's opinion. Its structure
+  is validated — acyclic, in range, deduplicated — but nobody checks that
+  "Quantum Circuit" really depends on "Quantum Gates".
+- Coverage detection is 17/18 on eighteen goals: a validation set, not a
+  benchmark. It calls "music theory and composition" covered. The interface
+  showing the match and offering an override is the actual mitigation.
+- Questions generated for discovered skills are not position-balanced the way
+  the committed 144 are.
+- When DuckDuckGo is blocking, a maths subject gets Wikipedia explanation and no
+  exercise sets.
+- The first person to ask for a subject waits about two minutes.

@@ -103,9 +103,18 @@ def health() -> HealthResponse:
 
 def _register_routers() -> None:
     """Import and mount routers. Kept in a function so import errors are loud."""
-    from app.routers import adaptation, chat, dashboard, diagnostic, graph, intake, path
+    from app.routers import (
+        adaptation,
+        chat,
+        dashboard,
+        diagnostic,
+        graph,
+        intake,
+        path,
+        topics,
+    )
 
-    for module in (intake, diagnostic, path, adaptation, chat, dashboard, graph):
+    for module in (intake, diagnostic, path, adaptation, chat, dashboard, graph, topics):
         app.include_router(module.router)
 
 

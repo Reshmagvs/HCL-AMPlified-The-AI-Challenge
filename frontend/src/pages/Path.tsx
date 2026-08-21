@@ -288,6 +288,14 @@ function ItemCard({
         </div>
         <div className="flex flex-wrap gap-1.5">
           {item.course && <span className="chip">{item.course.provider}</span>}
+          {item.course?.discovered && (
+            <span
+              className="chip chip-accent"
+              title="Found by searching the web for this skill, then fetched and checked. Its title, provider and cost were read from the page itself; the reading time is an estimate."
+            >
+              found for you
+            </span>
+          )}
           {item.course && <span className="chip">{item.course.format}</span>}
           {item.course && (
             <span className={`chip ${item.course.cost === 'free' ? 'text-sage-700' : ''}`}>

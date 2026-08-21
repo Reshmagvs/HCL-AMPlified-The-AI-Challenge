@@ -153,6 +153,14 @@ class WeekPacker:
         return max(1, math.ceil(hours / self.capacity - 1e-9))
 
 
+# The least a step may be scheduled for, however short its resource.
+MIN_STEP_HOURS = 0.5
+
+# A resource shorter than this fraction of the skill's own estimate is treated as
+# insufficient on its own rather than as evidence the skill is quick.
+SHORT_RESOURCE_FLOOR = 0.5
+
+
 def scheduled_hours(node, chosen: ScoredResource | None) -> float:
     """How much of the learner's week this step actually costs.
 
@@ -162,15 +170,24 @@ def scheduled_hours(node, chosen: ScoredResource | None) -> float:
     inside a six-hour budget and pushed the finish week past seventy.
 
     So the resource's length is divided across the skills it covers, and the
-    result is bounded by the curated estimate for this node -- which is the more
-    trustworthy figure for "how long does this skill take". The card still shows
-    the resource's real duration; only the scheduling arithmetic uses this.
+    result is bounded *both ways* by the estimate for this node -- which is the
+    more trustworthy figure for "how long does this skill take". The card still
+    shows the resource's real duration; only the scheduling arithmetic uses this.
+
+    The lower bound matters as much as the upper one, and only became visible
+    once resources were discovered rather than curated. A curated course runs for
+    hours; a Wikipedia article is a twenty-minute read. Scheduling the read as
+    the whole cost of the skill produced a nine-skill quantum computing plan that
+    finished in week one -- arithmetically consistent and pedagogically absurd.
+    A resource shorter than the skill needs means the resource is not sufficient
+    on its own, not that the skill got easier.
     """
     if chosen is None:
         return node.est_hours
     resource = chosen.resource
     share = resource.duration_hours / max(1, len(resource.skills_covered))
-    return round(max(0.5, min(share, node.est_hours * 2.0)), 2)
+    floor = max(MIN_STEP_HOURS, node.est_hours * SHORT_RESOURCE_FLOOR)
+    return round(max(floor, min(share, node.est_hours * 2.0)), 2)
 
 
 def _earliest_week(

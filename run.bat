@@ -89,6 +89,17 @@ if not exist ".env" (
     echo [4/7] Using existing .env
 )
 
+REM --- 5b. Local language model (optional; needed only for new subjects) ----
+REM Everything except building a *new* subject works without this. Rather than
+REM fail, say plainly what is missing and carry on: the curated curriculum, the
+REM planner, the placement check and the assistant are all unaffected.
+where ollama >nul 2>&1
+if errorlevel 1 (
+    echo      note: Ollama is not installed. Lodestar runs fully without it, but
+    echo            cannot build a curriculum for a subject outside the curated
+    echo            152 skills. To enable that, see https://ollama.com/download
+)
+
 REM --- 6. Seed ----------------------------------------------------------------
 echo [5/7] Preparing database
 pushd backend

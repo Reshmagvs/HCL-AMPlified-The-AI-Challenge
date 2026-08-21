@@ -120,7 +120,33 @@ def _candidate_block(candidates: list[dict[str, Any]]) -> str:
 
 
 def resolve_goal(goal_text: str) -> tuple[list[str], list[dict[str, Any]], bool]:
-    """Return (chosen node ids, the candidate shortlist, whether we degraded)."""
+    """Return (chosen node ids, the candidate shortlist, whether we degraded).
+
+    A topic built for this goal wins outright. It was constructed *for* this
+    sentence -- its terminal skills are the goal by definition -- so running
+    similarity over the merged graph afterwards could only do worse, and could
+    plausibly return a curated node that has nothing to do with the subject the
+    learner waited two minutes for.
+    """
+    from app.core import store
+
+    built = store.find_topic(goal_text)
+    if built:
+        graph = load_graph()
+        goals = [g for g in built.get("goal_skill_ids", []) if g in graph]
+        if goals:
+            shortlist = [
+                {
+                    "skill_id": g,
+                    "name": graph.require(g).name,
+                    "track": graph.require(g).track,
+                    "score": 1.0,
+                }
+                for g in goals
+            ]
+            return goals, shortlist, False
+        logger.warning("built topic %r no longer resolves", built.get("topic"))
+
     candidates = candidate_skills(goal_text)
     if not candidates:
         return [], [], True

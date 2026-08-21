@@ -455,3 +455,184 @@ so the header reads "6.0h of your 6h".
 - `Docker` as a claimed skill matches `cloud.compose` rather than `cloud.docker`.
   Harmless at the 0.4 cap and now visible to the learner, but imperfect.
 - The gold path lengths behind the 0.97× figure are still one person's estimates.
+
+---
+
+## Phase 12 — the closed world, opened
+
+The product had a defect it could not express: asked for quantum computing, it
+returned a plan for a programming topic. Nothing was broken. Cosine search over a
+152-node graph did exactly what it was built to do and returned the nearest node,
+because nearest-neighbour over a closed set has no way to say *I do not know
+this*. A learner would have followed that plan.
+
+Everything below follows from deciding that a curriculum which cannot admit
+ignorance is worse than one that can.
+
+### The local model had never actually run
+
+`LLM_PROVIDER=auto` falls back to the offline provider when Ollama is absent, and
+Ollama was not installed. Every claim about "running on a local model" was
+therefore true only in the sense that nothing had contradicted it. Measured, once
+it was installed on a four-core Ryzen 7 3700U with no usable GPU:
+
+| Model | Throughput | Load | Verdict |
+|---|---|---|---|
+| `qwen2.5:0.5b` | 25.7 tok/s | 7 s | Too weak for structure |
+| `qwen2.5:3b-instruct` | 11.0 tok/s | 68 s cold | **The default** |
+| `qwen2.5:7b-instruct-q4_K_M` | 4.8 tok/s | 119 s | Better answers, unusable here |
+
+Three changes made a 3B model dependable rather than decorative.
+
+**Decoding is constrained by a JSON schema.** Asked in English for a syllabus it
+returned `{"topic": "quantum-computing", "skills": []}` — 23 tokens, valid,
+useless. The same request expressed as a schema with `minItems` produced thirteen
+skills with a real dependency structure. Pydantic's own schema was not enough,
+because every field has a default and a default makes the field optional.
+Generation and validation now use different schemas on purpose: strict for the
+sampler, forgiving for the parser.
+
+**The model stays resident.** A cold load cost 68 s and Ollama unloads after five
+idle minutes, so the first request of the day spent longer loading than
+generating. `keep_alive` plus a warm-up inside `scripts.seed` moves that cost
+into the visible setup step.
+
+**Slow work is never put in front of a learner.** Providers now report measured
+throughput and callers do the arithmetic. This was found the hard way: enabling
+Ollama made path generation take **5.5 minutes**, because narration ran once per
+item. Narration is polish on a reason that is already computed deterministically,
+so it now runs only when the projected cost fits a latency budget — a hosted
+model narrates, this one does not. Path generation returned to **1.9 s**.
+
+The budget is a rule rather than a switch, so the same code does the right thing
+on a machine with a GPU without anyone changing a setting.
+
+### Deciding whether a subject is already covered
+
+Three approaches were tried. The two that failed are more informative than the
+one that worked.
+
+*Absolute cosine, calibrated against the graph.* Each curated node's name scored
+against its own vector gives the distribution of a genuine name-match: median
+0.813, 5th percentile 0.754. But real goals are phrased loosely. "learn python
+programming" scored 0.769 and "I want to build websites" 0.664 — below goals that
+are not covered at all. No threshold splits them.
+
+*A z-score against the graph's own spread.* Ranked "medieval european history"
+(2.95) above "cybersecurity penetration testing" (3.16). Worse than the raw
+score.
+
+*Asking the model.* Constrained to a shortlist so it could not hallucinate, it
+got 10 of 12 and took about 15 seconds each time. It rejected `prog.python_basics`
+for "learn python programming".
+
+What works is two cheap signals together. Similarity says "something like this is
+here"; **IDF-weighted lexical familiarity** says "this curriculum uses these
+words". The weighting is what makes it work: an unweighted word count called
+"civil engineering structural analysis" covered, because the graph uses
+"engineering" and "analysis". Weighted by rarity across the graph's own nodes,
+quantum computing, organic chemistry, medieval history and piano all score near
+zero, while every covered goal clears a half.
+
+**17 of 18, in 0.3 s, with no model call** — faster *and* more accurate than the
+model. The remaining error calls "music theory and composition" covered, because
+"theory" and "composition" are rare words the graph happens to use. That is not
+fixed with more arithmetic. It is fixed by showing the learner which skill was
+matched and offering a button to build their subject anyway: a wrong guess a
+person can see and overrule beats a confident one they cannot.
+
+### One scraped search engine is not a foundation
+
+The first implementation used DuckDuckGo's Lite endpoint and worked beautifully
+for about forty queries. Then every request returned HTTP 202 with an empty
+challenge page, instantly, and stayed blocked through a cooldown — the failure
+arriving exactly when usage picks up.
+
+Discovery is now a chain. **Wikimedia** first: a documented public API across
+Wikipedia, Wikibooks and Wikiversity, no key, near-total coverage of academic
+subjects, and it works where a browser user-agent gets 403 because the request
+sends the identifying `Api-User-Agent` their robot policy asks for. **DuckDuckGo**
+second, best-effort, paced, and stood down for fifteen minutes the moment it
+starts refusing — so a blocked engine degrades the result instead of making a
+subject look like one nobody has ever written about.
+
+Two further corrections came from reading what it actually returned:
+
+- **Wikimedia searches were polluted by the words that help a web search.**
+  "Integration by parts practice" returns better articles as "integration by
+  parts": a wiki has no page called "tutorial".
+- **Appending the topic to every query was actively harmful.** "Binary Numbers
+  quantum computing" returned a page on quantum cryptography, because a
+  foundational prerequisite is precisely the step that is *not* about the topic
+  yet. Queries are now built from the skill's own proposed keywords.
+
+Relevance is then decided by the same local embedder that binds catalogue
+resources, so one notion of relevance governs everywhere. Before that, provider
+diversity was enforced absolutely and returned "Virtues/Moral Integration" for a
+calculus skill; diversity is now a preference, not a rule.
+
+### Nothing found is taken on trust
+
+A search result is a claim that a page exists. Every URL is fetched, and the
+title, description, provider, format and cost are read from the response — never
+from the search snippet, never from a model. Three rules came out of pages that
+lied:
+
+- **A 200 is not proof of content.** Khan Academy answers a bot check with HTTP
+  200 and a page reading "Client Challenge". Measured on real pages, four usable
+  ones carried 9,825 to 184,792 characters of visible text while the two junk
+  responses carried 228 and 17; the gate sits an order of magnitude clear of
+  both.
+- **`format` is decided by the document, not by a list of known video sites** —
+  an `og:type` of video, a `<video>` element, an embedded player. A host list
+  would be exactly the hardcoding this work exists to remove.
+- **Nothing discovered carries a rating.** `rating` became nullable and the
+  scorer treats absence as neutral. Inventing a plausible 4.2 would be
+  fabricating a statistic about a real third party, which the brief forbids.
+
+`duration_hours` is computed from a measured word count at 200 words a minute: an
+estimate *of a measurement*, rather than a number invented per resource.
+
+### Consequences elsewhere
+
+**A short resource does not make a skill quick.** Scheduling took the resource's
+length bounded above by the skill's estimate. That was fine for curated
+multi-hour courses and absurd for a twenty-minute Wikipedia article: a nine-skill
+quantum computing plan finished in **week 1**. The skill estimate now bounds the
+schedule from below as well — a resource shorter than the skill needs means the
+resource is insufficient, not that the skill got easier. The same plan now
+finishes in week 8 across 45.5 hours.
+
+**Embedding matrices are addressed by id, not by row order.** Row order was an
+implicit contract — "sorted ids, as they were when the matrix was built" — that
+held only while the id set was frozen. A companion `.ids.json` now names the id
+in every row, curated and generated vectors are merged by id, and a skill with no
+vector is simply absent from search rather than silently shifting every row after
+it.
+
+**The seed is immutable.** Discovered content lives in `data/generated/` and is
+layered on top. A generated node may never redefine a curated one, and one whose
+prerequisites do not resolve is dropped with a log line rather than allowed to
+raise. A bad generation degrades the overlay and is fixed with `rm -r`.
+
+**The placement check tells the truth about itself.** Terminating with nothing
+asked used to render as "0 questions was enough" — a lie, and a consequential
+one, because the learner would believe they had been placed. The API now reports
+*why* it stopped, and a brand-new subject says plainly that its questions are
+still being written and that the plan assumes a fresh start.
+
+**Skill names are made readable.** The model sometimes answers in the shape of
+the ids around it — "quantum-gates", "binary_numbers" — and those went straight
+onto the learner's plan.
+
+### Still open
+- The syllabus for a discovered subject is a 3B model's opinion. Structure is
+  validated; pedagogy is not. Nobody checks that "Quantum Circuit" really
+  requires "Quantum Gates".
+- Coverage detection is 17/18 on eighteen goals. That is a validation set, not a
+  benchmark.
+- Questions generated for discovered skills are not position-balanced the way the
+  committed 144 are.
+- When DuckDuckGo is blocked, a maths subject gets Wikipedia explanation and no
+  exercise sets.
+- A first build costs about two minutes, roughly 80 s of it generation.

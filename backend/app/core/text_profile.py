@@ -22,6 +22,10 @@ _HOURS_RE = re.compile(
 _HOURS_ALT_RE = re.compile(
     r"(?:per|a|each)\s*week[^.]{0,20}?(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b", re.I
 )
+# "4 hours weekly" and "6 hrs/wk" are as common as "a week", and were missed.
+_HOURS_WEEKLY_RE = re.compile(
+    r"(\d+(?:\.\d+)?)\s*\+?\s*(?:hours?|hrs?|h)\b\s*(?:weekly|/\s*wk|per\s*wk)", re.I
+)
 _DATE_RE = re.compile(r"\b20\d{2}-\d{2}-\d{2}\b")
 _GOAL_RE = re.compile(
     r"(?:i\s+want\s+to\s+(?:be|become|learn|get\s+into|build|work)|"
@@ -77,8 +81,72 @@ def _clean_goal(fragment: str) -> str:
     return text.strip(" .,!?;:-")[:160]
 
 
+# A clause that states a constraint rather than a subject. Used to find where
+# the goal ends when the learner did not wrap it in "I want to ...".
+_CONSTRAINT_CLAUSE_RE = re.compile(
+    r"^\s*(?:"
+    r"\d+\s*(?:hours?|hrs?|h)\b"          # "6 hours a week"
+    r"|(?:about|around|roughly)\s+\d+"     # "about 6 a week"
+    r"|free\b|paid\b|cheap\b"
+    r"|i\s|i'|my\s|and\s|but\s"
+    r"|prefer|prefers|preferably"
+    r"|beginner|intermediate|advanced"
+    r"|video|text|interactive"
+    r"|low\s+bandwidth|limited\s+data|slow\s+internet"
+    r")",
+    re.I,
+)
+
+
+# Words that carry no subject on their own. A clause built entirely from these
+# is conversation, not a topic -- "hello there" must never become a goal.
+_PLEASANTRIES = frozenset(
+    """hi hello hey yo hiya greetings good morning afternoon evening night there
+    thanks thank you please ok okay sure yes yeah yep no nope nah cool nice great
+    sorry hmm um well so anyway right fine alright cheers bye help me my friend
+    a an the is are was were be am do does did can could would should i you it
+    what how why when where who this that these those and or but if to of for
+    sounds looks seems works perfect awesome excellent got makes sense lets let
+    start begin now again more much very too also just really on with""".split()
+)
+
+
+def _is_conversation(candidate: str) -> bool:
+    """True when the clause says nothing a curriculum could be built from."""
+    words = re.findall(r"[a-z0-9+#]+", candidate.lower())
+    return not words or all(word in _PLEASANTRIES for word in words)
+
+
+def _bare_subject(text: str) -> str | None:
+    """The goal when the learner just names the subject.
+
+    "I want to become an ML engineer" is caught by ``_GOAL_RE``. "organic
+    chemistry for my class 12 board exam, 6 hours a week, free only" is not --
+    it opens with the subject itself, which is how a great many people write.
+    That sentence used to yield no goal at all, and the assistant then asked
+    what the learner wanted to study, having just been told.
+
+    So when no goal phrasing matches, the first clause is taken as the subject,
+    provided it does not read as a constraint. Constraints ("6 hours a week",
+    "free only", "I prefer video") are recognisable on their own and are exactly
+    what the other extractors already handle, and so is conversation ("hello
+    there"), which must not become a subject either.
+    """
+    for clause in re.split(r"[.,;]", text):
+        candidate = _clean(clause)
+        if len(candidate) < 3 or _CONSTRAINT_CLAUSE_RE.match(candidate):
+            continue
+        if _is_conversation(candidate):
+            continue
+        words = candidate.split()
+        if not 1 <= len(words) <= 14:
+            continue
+        return candidate.strip(" .,!?;:-")[:160]
+    return None
+
+
 def _find_hours(text: str) -> float | None:
-    for pattern in (_HOURS_RE, _HOURS_ALT_RE):
+    for pattern in (_HOURS_RE, _HOURS_ALT_RE, _HOURS_WEEKLY_RE):
         match = pattern.search(text)
         if match:
             hours = float(match.group(1))
@@ -129,6 +197,12 @@ def extract_profile(text: str, existing: dict[str, Any] | None = None) -> dict[s
     goal_match = _GOAL_RE.search(text)
     if goal_match:
         updates["goal_text"] = _clean_goal(goal_match.group(1))
+    elif not profile.get("goal_text"):
+        # No goal phrasing, and none established yet: the learner probably just
+        # named the subject.
+        subject = _bare_subject(text)
+        if subject:
+            updates["goal_text"] = subject
 
     if any(w in low for w in ("free only", "only free", "free resources", "can't pay",
                               "cannot pay", "no money", "tight budget", "no budget")):

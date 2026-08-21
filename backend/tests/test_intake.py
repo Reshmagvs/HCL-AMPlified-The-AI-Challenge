@@ -87,7 +87,7 @@ def test_off_list_ids_are_rejected(monkeypatch, graph) -> None:
         def available(self):
             return True
 
-        def complete(self, prompt, *, temperature=0.1, max_tokens=2048):
+        def complete(self, prompt, *, temperature=0.1, max_tokens=2048, json_schema=None):
             return '{"skill_ids": ["ml.definitely_not_real", "evil.node"], "reason": "x"}'
 
         def embed(self, text):
@@ -117,7 +117,7 @@ def test_resolution_works_with_no_provider_at_all(monkeypatch, graph) -> None:
         def available(self):
             return False
 
-        def complete(self, prompt, *, temperature=0.1, max_tokens=2048):
+        def complete(self, prompt, *, temperature=0.1, max_tokens=2048, json_schema=None):
             raise ProviderUnavailable("down")
 
         def embed(self, text):

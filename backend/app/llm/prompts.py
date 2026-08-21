@@ -282,3 +282,74 @@ Return JSON with one key per skill id given above:
 
 Output JSON only, no prose, no markdown fences.
 """.replace("{mark}", MARK_QUIZ)
+
+
+# --------------------------------------------------------------------------- #
+# Open-world expansion
+# --------------------------------------------------------------------------- #
+# Two prompts support building a curriculum for a topic the curated graph does
+# not contain. Both are deliberately narrow: the model contributes *structure*
+# and *language*, never a fact a learner will act on and never a URL. Links come
+# from live search and are fetched before they are kept.
+
+COVERAGE_CHECK = """A learner wrote this goal:
+
+"{goal_text}"
+
+Here are the closest skills in our existing curriculum:
+{candidates}
+
+Question: is the learner's subject already one of these skills?
+
+Learners describe goals loosely. Match on SUBJECT, not on wording:
+- "learn python programming" IS "Python Basics" -- same subject, looser words.
+- "data analysis with SQL" IS "SQL for Analytics" -- same subject.
+- "I want to build websites" IS a web development skill -- same subject.
+- "quantum computing" is NOT "Linear Algebra" and NOT "Computer Architecture".
+  Those are related subjects, and related is not the same.
+- "organic chemistry" is NOT any of these. Nothing here teaches chemistry.
+
+Answer true if any listed skill teaches the learner's subject, even partly.
+Answer false only if the subject is genuinely absent from the list.
+
+Return JSON only:
+{{"covered": true, "skill_id": "<one id copied exactly from the list>"}}
+or
+{{"covered": false, "skill_id": ""}}
+"""
+
+
+SYLLABUS_DESIGN = """Design a learning curriculum for this goal:
+
+"{goal_text}"
+
+Break the subject into between 8 and {max_skills} concrete skills, ordered so
+that nothing appears before what it depends on. Start from the genuine
+prerequisites a beginner needs, including any from other subjects (the
+mathematics a topic requires, for instance), and end at the goal itself.
+
+For each skill give:
+  name        a specific skill, not a chapter title ("Qubits and Superposition",
+              not "Chapter 1")
+  summary     one sentence on what the learner will be able to do
+  keywords    3 to 6 search terms for this skill
+  difficulty  1 (absolute beginner) to 5 (advanced)
+  hours       realistic study hours for a motivated beginner, 1 to 40
+  requires    array of indices of EARLIER skills in this list that must come
+              first. Use [] for the starting skills. Only indices smaller than
+              this skill's own index are allowed.
+
+Judge the dependencies honestly: an index in `requires` claims the learner
+cannot understand this skill without that one first. Skills that are genuinely
+independent should not be chained.
+
+Do not invent courses, websites, links, prices or statistics. Structure only.
+
+Return JSON only, no prose, no markdown fences:
+{{"topic": "<short name for the subject>",
+  "track": "<one or two word grouping, lowercase>",
+  "skills": [
+    {{"name": "...", "summary": "...", "keywords": ["...", "..."],
+      "difficulty": 1, "hours": 6, "requires": []}}
+  ]}}
+"""

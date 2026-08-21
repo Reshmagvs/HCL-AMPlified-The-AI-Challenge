@@ -24,6 +24,12 @@ os.environ.setdefault("GEMINI_API_KEY", "")
 _TEST_DB = BACKEND_DIR / "tests" / "_test_lodestar.db"
 os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB.as_posix()}"
 
+# Discovered subjects are the one piece of application state that lives on disk
+# outside the database. Tests clear it between cases, so it must never point at
+# a real installation -- a suite run once deleted every subject a user had built.
+_TEST_GENERATED = BACKEND_DIR / "tests" / "_test_generated"
+os.environ["GENERATED_DIR"] = str(_TEST_GENERATED)
+
 
 def _remove_database() -> None:
     """Delete the test database and its WAL sidecars, best effort.

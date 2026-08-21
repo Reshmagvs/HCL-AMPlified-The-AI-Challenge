@@ -10,6 +10,13 @@
  * Watching goal, hours and preferences appear one by one as plain English is
  * typed is what shows that the system is reading structure rather than matching
  * keywords — so each newly-filled field animates once, and only once.
+ *
+ * Underneath it sits the other half of the promise: if the goal names a subject
+ * the curriculum does not teach, we say so here and offer to build it, rather
+ * than quietly resolving it to the nearest thing we happen to know. That check
+ * runs as soon as a goal has been extracted, so the couple of minutes a build
+ * takes overlaps with the learner reading their own profile card instead of
+ * being charged to them after they press the button.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -18,6 +25,7 @@ import { useMutation } from '@tanstack/react-query'
 import { api, type ProfileDraft } from '../lib/api'
 import { PROFILE_FIELDS, formatField, useSession } from '../lib/store'
 import { Callout, DegradedBanner, ErrorPanel, Hint } from '../components/states'
+import { TopicBuilder } from '../components/TopicBuilder'
 
 const OPENER =
   'Tell me what you want to be able to do, and roughly how many hours a week you can give it.'
@@ -67,6 +75,11 @@ export default function Intake() {
       setDegraded(data.llm_degraded)
     },
   })
+
+  // False while a subject is being built, so the button waits rather than
+  // committing to a plan whose goal the graph does not contain yet.
+  const [plannable, setPlannable] = useState(true)
+  const goalText = profile.goal_text ?? ''
 
   const commit = useMutation({
     mutationFn: () => api.intakeCommit(sessionId, profile),
@@ -165,11 +178,21 @@ export default function Intake() {
 
           <button
             className="btn-primary mt-4 w-full"
-            disabled={!ready || commit.isPending}
+            disabled={!ready || !plannable || commit.isPending}
             onClick={() => commit.mutate()}
           >
-            {commit.isPending ? 'Working out your route…' : 'Build my plan →'}
+            {commit.isPending
+              ? 'Working out your route…'
+              : plannable
+                ? 'Build my plan →'
+                : 'Building your subject…'}
           </button>
+
+          {goalText.trim().length > 2 && (
+            <div className="mt-4">
+              <TopicBuilder goalText={goalText} onPlannableChange={setPlannable} />
+            </div>
+          )}
 
           <div className="mt-3">
             {ready ? (

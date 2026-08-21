@@ -40,7 +40,9 @@ def test_every_entry_is_well_formed(catalog, graph) -> None:
         assert resource.duration_hours > 0, resource.id
         assert resource.title.strip()
         assert resource.provider.strip()
-        assert 3.0 <= resource.rating <= 5.0
+        # None is legitimate: a discovered page carries no rating, and
+        # inventing one would be fabricating a statistic about a real site.
+        assert resource.rating is None or 3.0 <= resource.rating <= 5.0
         resolvable = [s for s in resource.skills_covered if s in graph]
         assert resolvable, f"{resource.id} covers no skill that exists"
 

@@ -135,7 +135,7 @@ def _select_skill(
     return min(candidates, key=utility)
 
 
-def _question_for(node: SkillNode) -> tuple[GeneratedQuestion, bool]:
+def _question_for(node: SkillNode) -> tuple[GeneratedQuestion, bool] | None:
     """Prefer the committed bank; generate only for a skill it does not cover.
 
     Returns (question, degraded). A banked question is never degraded -- it was
@@ -153,21 +153,13 @@ def _question_for(node: SkillNode) -> tuple[GeneratedQuestion, bool]:
             False,
         )
 
-    logger.info("no banked question for %s -- generating one", node.id)
-    prompt = QUIZ_GENERATION.format(
-        skill_name=node.name,
-        skill_description=node.description,
-        keywords=", ".join(node.keywords),
-        difficulty=node.difficulty,
-    )
-    provider = get_provider()
-    if provider.available():
-        try:
-            return call_with_schema(provider, prompt, GeneratedQuestion, temperature=0.6), False
-        except (SchemaViolation, ProviderUnavailable) as exc:
-            logger.info("quiz generation degraded for %s: %s", node.id, str(exc)[:120])
-
-    return GeneratedQuestion(**json.loads(MockProvider().complete(prompt))), True
+    # Deliberately no inline generation. It cost about twenty seconds per
+    # question on a local model, between every question, and threw the result
+    # away afterwards. Questions for discovered skills are written once in the
+    # background by ``core.placement``; until they exist this skill simply
+    # cannot be measured, and the caller asks about a different one.
+    logger.info("no question available for %s -- skipping it this round", node.id)
+    return None
 
 
 # --------------------------------------------------------------------------- #
@@ -203,16 +195,48 @@ def next_question(
         return DiagnosticQuestion(
             done=True, asked=len(answered),
             max_questions=settings.diagnostic_max_questions, confidence=current_confidence,
+            done_reason=(
+                "max_questions"
+                if len(answered) >= settings.diagnostic_max_questions
+                else "confident"
+            ),
         )
 
-    node = _select_skill(graph, gap, table, {q.skill_id for q in asked_items})
-    if node is None:
+    # Skills with no question yet are skipped rather than blocking, so a topic
+    # whose questions are still being written stays usable.
+    unusable: set[str] = set()
+    node = None
+    generated = None
+    degraded = False
+    while True:
+        node = _select_skill(graph, gap, table, {q.skill_id for q in asked_items} | unusable)
+        if node is None:
+            break
+        found = _question_for(node)
+        if found is not None:
+            generated, degraded = found
+            break
+        unusable.add(node.id)
+
+    if node is None or generated is None:
+        # Nothing measurable right now. If that is because skills in the gap have
+        # no question yet, start writing them -- so a learner who comes back, or
+        # simply reloads in a minute, gets a real placement check instead of the
+        # same empty answer for ever. Self-healing beats a permanent gap.
+        if unusable:
+            from app.core import placement
+
+            placement.write_in_background(sorted(unusable))
         return DiagnosticQuestion(
             done=True, asked=len(answered),
             max_questions=settings.diagnostic_max_questions, confidence=current_confidence,
+            # Saying "that was enough" when nothing could be asked would be a
+            # lie, and a consequential one: the learner would believe they had
+            # been placed. They have not, so the interface says so instead.
+            done_reason="questions_not_ready" if unusable else "nothing_to_measure",
+            unmeasured=len(unusable),
         )
 
-    generated, degraded = _question_for(node)
     item = QuizItem(
         learner_id=learner_id,
         skill_id=node.id,

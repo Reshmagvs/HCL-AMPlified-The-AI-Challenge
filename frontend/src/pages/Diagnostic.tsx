@@ -67,26 +67,51 @@ export default function Diagnostic() {
   const seeded = Object.keys(seededSkills)
 
   if (data.done) {
+    // Ending because nothing could be asked is not the same as ending because
+    // enough was asked, and the difference matters to the learner: one means
+    // "we placed you", the other means "we did not". Saying the first when the
+    // second is true would have them trust a measurement that never happened.
+    const notPlaced = data.asked === 0 && data.done_reason !== 'confident'
+    const headline = notPlaced
+      ? 'We’ll place you a little later.'
+      : 'We know enough to place you.'
+
     return (
       <div className="mx-auto max-w-2xl">
         <header className="mb-5">
           <p className="label">Step 2 of 4 — done</p>
-          <h1 className="mt-1 text-2xl">We know enough to place you.</h1>
+          <h1 className="mt-1 text-2xl">{headline}</h1>
         </header>
 
         <div className="card space-y-5 p-7">
           <div className="flex flex-wrap items-center gap-6">
             <Ring value={data.confidence} caption={`${Math.round(data.confidence * 100)}%`} />
             <div className="max-w-sm text-sm leading-relaxed text-ink-500">
-              <p>
-                <strong className="font-semibold text-ink-900">{data.asked}</strong>{' '}
-                question{data.asked === 1 ? '' : 's'} was enough. Each one was chosen to settle the
-                most uncertainty, so a few go a long way.
-              </p>
-              <p className="mt-2">
-                Anything you demonstrated is dropped from the plan entirely — you will not be sent
-                to relearn it.
-              </p>
+              {notPlaced ? (
+                <>
+                  <p>
+                    We haven’t measured you yet. This subject was built for you a moment ago, and
+                    its questions are still being written.
+                  </p>
+                  <p className="mt-2">
+                    Your plan is built as though you are starting fresh, so nothing is skipped —
+                    which is the safe way to be wrong. Come back to this check in a few minutes and
+                    anything you already know will be taken out.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    <strong className="font-semibold text-ink-900">{data.asked}</strong>{' '}
+                    question{data.asked === 1 ? '' : 's'} was enough. Each one was chosen to settle
+                    the most uncertainty, so a few go a long way.
+                  </p>
+                  <p className="mt-2">
+                    Anything you demonstrated is dropped from the plan entirely — you will not be
+                    sent to relearn it.
+                  </p>
+                </>
+              )}
             </div>
           </div>
 

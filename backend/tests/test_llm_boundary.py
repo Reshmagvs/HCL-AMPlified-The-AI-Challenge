@@ -38,7 +38,14 @@ class ScriptedProvider(LLMProvider):
         self.replies = replies
         self.calls: list[str] = []
 
-    def complete(self, prompt: str, *, temperature: float = 0.2, max_tokens: int = 2048) -> str:
+    def complete(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+        json_schema: dict | None = None,
+    ) -> str:
         self.calls.append(prompt)
         return self.replies[min(len(self.calls) - 1, len(self.replies) - 1)]
 
@@ -101,7 +108,14 @@ def test_retry_succeeds_when_the_model_corrects_itself() -> None:
 
 def test_provider_unavailable_propagates_without_retrying() -> None:
     class Dead(ScriptedProvider):
-        def complete(self, prompt: str, *, temperature: float = 0.2, max_tokens: int = 2048) -> str:
+        def complete(
+        self,
+        prompt: str,
+        *,
+        temperature: float = 0.2,
+        max_tokens: int = 2048,
+        json_schema: dict | None = None,
+    ) -> str:
             self.calls.append(prompt)
             raise ProviderUnavailable("down")
 

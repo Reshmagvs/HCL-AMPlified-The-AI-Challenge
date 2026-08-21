@@ -76,9 +76,17 @@ class Resource:
     duration_hours: float
     level: str
     skills_covered: tuple[str, ...]
-    rating: float
+    # None when nobody has rated it. A discovered page carries no rating, and
+    # inventing a plausible 4.2 would be fabricating a statistic about a real
+    # third-party resource -- the scorer treats None as neutral instead.
+    rating: float | None
     language: str
     description: str
+    # True when this entry was found by live search rather than curated. The
+    # URL, title, description, provider, format and cost were all read off the
+    # page that answered; duration and level remain estimates either way.
+    discovered: bool = False
+    found_at: str = ""
 
     @property
     def embed_text(self) -> str:
@@ -96,6 +104,8 @@ class Resource:
             "level": self.level,
             "rating": self.rating,
             "description": self.description,
+            "discovered": self.discovered,
+            "found_at": self.found_at,
         }
 
 
@@ -122,32 +132,44 @@ class ScoredResource:
 # --------------------------------------------------------------------------- #
 # Loading
 # --------------------------------------------------------------------------- #
-@lru_cache(maxsize=1)
-def load_catalog() -> list[Resource]:
-    """Read data/courses.json. An absent file yields an empty catalog, not a crash."""
+def _resource(entry: dict[str, Any]) -> Resource:
+    return Resource(
+        id=entry["id"],
+        title=entry["title"],
+        provider=entry["provider"],
+        url=entry["url"],
+        format=entry["format"],
+        cost=entry["cost"],
+        duration_hours=float(entry["duration_hours"]),
+        level=entry["level"],
+        skills_covered=tuple(entry["skills_covered"]),
+        rating=None if entry.get("rating") is None else float(entry["rating"]),
+        language=entry.get("language", "en"),
+        description=entry.get("description", ""),
+        discovered=bool(entry.get("discovered", False)),
+        found_at=entry.get("found_at", ""),
+    )
+
+
+def curated_courses() -> list[dict[str, Any]]:
+    """The hand-verified catalogue, exactly as checked into git."""
     target = get_settings().data_dir / "courses.json"
     if not target.exists():
         logger.warning("courses.json not found at %s -- serving an empty catalog", target)
         return []
-    raw = json.loads(target.read_text(encoding="utf-8"))
-    catalog = [
-        Resource(
-            id=entry["id"],
-            title=entry["title"],
-            provider=entry["provider"],
-            url=entry["url"],
-            format=entry["format"],
-            cost=entry["cost"],
-            duration_hours=float(entry["duration_hours"]),
-            level=entry["level"],
-            skills_covered=tuple(entry["skills_covered"]),
-            rating=float(entry.get("rating", 4.0)),
-            language=entry.get("language", "en"),
-            description=entry.get("description", ""),
-        )
-        for entry in raw
-    ]
-    logger.info("catalog loaded: %d resources", len(catalog))
+    return json.loads(target.read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=1)
+def load_catalog() -> list[Resource]:
+    """The curated catalogue plus everything discovered since, seed winning."""
+    from app.core import store
+
+    entries = {entry["id"]: entry for entry in store.load_courses()}
+    entries.update({entry["id"]: entry for entry in curated_courses()})
+    catalog = [_resource(entry) for entry in entries.values()]
+    discovered = sum(1 for r in catalog if r.discovered)
+    logger.info("catalog loaded: %d resources (%d discovered)", len(catalog), discovered)
     return catalog
 
 
@@ -178,49 +200,100 @@ def matrix_path(kind: str, embedder: str) -> Path:
     return get_settings().data_dir / f"{kind}_embeddings.{embedder}.npy"
 
 
-def _load_matrix(
-    path: Path, expected_rows: int, expected_dim: int, label: str
-) -> np.ndarray | None:
+def curated_ids_path(kind: str, embedder: str) -> Path:
+    """The id-per-row companion to a curated matrix, if one was written."""
+    return get_settings().data_dir / f"{kind}_embeddings.{embedder}.ids.json"
+
+
+def _curated_vectors(kind: str, embedder: str, fallback_ids: list[str]) -> dict[str, np.ndarray]:
+    """id -> vector for the curated matrix.
+
+    Row order used to be an implicit contract: "sorted ids, as they were when
+    the matrix was built". That held only while the id set was frozen. Now that
+    the graph grows at runtime, the contract is written down -- a companion
+    ``.ids.json`` names the id in every row -- and ``fallback_ids`` reproduces
+    the old assumption for a matrix built before that file existed.
+    """
+    path = matrix_path(kind, embedder)
     if not path.exists():
         logger.warning(
-            "%s embeddings missing at %s -- run: python -m scripts.build_embeddings",
-            label, path,
+            "%s embeddings missing at %s -- run: python -m scripts.build_embeddings", kind, path
         )
-        return None
-    matrix = np.load(path)
-    if matrix.shape[0] != expected_rows or matrix.shape[1] != expected_dim:
+        return {}
+    try:
+        matrix = np.load(path)
+    except (OSError, ValueError) as exc:
+        logger.error("%s embeddings unreadable (%s)", kind, exc)
+        return {}
+
+    ids_file = curated_ids_path(kind, embedder)
+    if ids_file.exists():
+        ids = json.loads(ids_file.read_text(encoding="utf-8"))
+    else:
+        ids = fallback_ids
+
+    if matrix.shape[0] != len(ids):
         logger.error(
-            "%s embeddings are %s but %d rows of %d dims are expected -- rebuild them",
-            label, matrix.shape, expected_rows, expected_dim,
+            "%s embeddings have %d rows for %d ids -- rebuild: python -m scripts.build_embeddings",
+            kind, matrix.shape[0], len(ids),
         )
-        return None
-    return matrix.astype(np.float32)
+        return {}
+    return {identifier: matrix[row].astype(np.float32) for row, identifier in enumerate(ids)}
+
+
+def _assemble(
+    kind: str, embedder: str, dim: int, wanted: list[str], fallback_ids: list[str]
+) -> tuple[np.ndarray | None, list[str]]:
+    """Build a matrix over exactly the ids that have a vector of the right size.
+
+    Returning the surviving id list alongside the matrix is what lets a partly
+    embedded graph work: a skill with no vector is simply absent from search
+    rather than silently shifting every row after it.
+    """
+    from app.core import store
+
+    vectors = _curated_vectors(kind, embedder, fallback_ids)
+    vectors.update(store.load_vectors(kind, embedder))
+
+    usable = [i for i in wanted if i in vectors and vectors[i].shape[0] == dim]
+    if not usable:
+        return None, []
+    if len(usable) != len(wanted):
+        logger.warning(
+            "%s: %d of %d ids have no %s vector -- they will not be matched",
+            kind, len(wanted) - len(usable), len(wanted), embedder,
+        )
+    return np.vstack([vectors[i] for i in usable]).astype(np.float32), usable
 
 
 @lru_cache(maxsize=1)
 def load_matrices() -> dict[str, Any]:
     """Load both embedding matrices plus the id -> row index maps."""
-    from app.core.skill_graph import load_graph
-
     from app.core.embeddings import get_embedder
+    from app.core.skill_graph import curated_skills, load_graph
 
-    catalog = load_catalog()
-    skill_ids = sorted(load_graph().nodes)
     embedder = get_embedder()
+    catalog_ids = [r.id for r in load_catalog()]
+    skill_ids = sorted(load_graph().nodes)
+
+    catalog_matrix, catalog_rows = _assemble(
+        "catalog", embedder.name, embedder.dim, catalog_ids,
+        [entry["id"] for entry in curated_courses()],
+    )
+    skill_matrix, skill_rows = _assemble(
+        "skill", embedder.name, embedder.dim, skill_ids,
+        sorted(entry["id"] for entry in curated_skills()),
+    )
 
     return {
         "embedder": embedder.name,
         "dim": embedder.dim,
-        "catalog": _load_matrix(
-            matrix_path("catalog", embedder.name), len(catalog), embedder.dim, "catalog"
-        ),
-        "catalog_ids": [r.id for r in catalog],
-        "catalog_row": {r.id: i for i, r in enumerate(catalog)},
-        "skills": _load_matrix(
-            matrix_path("skill", embedder.name), len(skill_ids), embedder.dim, "skill"
-        ),
-        "skill_ids": skill_ids,
-        "skill_row": {s: i for i, s in enumerate(skill_ids)},
+        "catalog": catalog_matrix,
+        "catalog_ids": catalog_rows,
+        "catalog_row": {identifier: row for row, identifier in enumerate(catalog_rows)},
+        "skills": skill_matrix,
+        "skill_ids": skill_rows,
+        "skill_row": {identifier: row for row, identifier in enumerate(skill_rows)},
     }
 
 
@@ -359,7 +432,11 @@ def score_resources(
             "level": _level_match(resource.level, target_level),
             "format": _format_match(resource.format, prefs.format_pref),
             "cost": 1.0 if resource.cost == "free" else 0.25,
-            "rating": max(0.0, min(1.0, (resource.rating - 3.0) / 2.0)),
+            "rating": (
+                0.5
+                if resource.rating is None
+                else max(0.0, min(1.0, (resource.rating - 3.0) / 2.0))
+            ),
         }
         total = (
             WEIGHT_COSINE * components["cosine"]

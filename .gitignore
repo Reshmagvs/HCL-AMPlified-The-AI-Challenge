@@ -31,6 +31,11 @@ backend/data/verify_report.json
 backend/data/link_audit.json
 backend/.install_hash
 
+# Subjects discovered at runtime. Regenerable cache, not source: the topic
+# is rebuilt on demand, and committing it would freeze a snapshot of the web.
+backend/data/generated/
+backend/tests/_test_generated/
+
 # OS / editor
 .DS_Store
 Thumbs.db

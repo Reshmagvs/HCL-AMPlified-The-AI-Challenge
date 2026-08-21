@@ -101,6 +101,11 @@ class DiagnosticQuestion(BaseModel):
     max_questions: int = 10
     confidence: float = 0.0
     llm_degraded: bool = False
+    # Why the check ended, so the interface can tell the truth about it.
+    # confident | max_questions | nothing_to_measure | questions_not_ready
+    done_reason: str = ""
+    # Skills that are in the plan but have no question written yet.
+    unmeasured: int = 0
 
 
 class DiagnosticAnswerRequest(BaseModel):
@@ -130,8 +135,13 @@ class ResourceOut(BaseModel):
     cost: str
     duration_hours: float
     level: str
-    rating: float
+    rating: float | None = None
     description: str = ""
+    # Found by live search rather than curated. Surfaced so the interface can
+    # say so: the URL, title, provider, format and cost were read off the page
+    # that answered, while duration and level remain estimates.
+    discovered: bool = False
+    found_at: str = ""
 
 
 class PathItemOut(BaseModel):
