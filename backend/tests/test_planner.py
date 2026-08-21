@@ -235,3 +235,51 @@ def test_milestones_are_inserted_at_track_boundaries(graph) -> None:
     assert milestones, "a multi-track path needs checkpoints"
     assert len(milestones) == len(tracks)
     assert all(m.provenance["milestone"]["questions"] == 3 for m in milestones)
+
+
+# --------------------------------------------------------------------------- #
+# What the explanation is allowed to say
+# --------------------------------------------------------------------------- #
+def test_the_reason_names_skills_rather_than_reciting_ids() -> None:
+    """A learner was told a step "leads into astronomy.basic_geometry".
+
+    That is a database key. The chain of ids stays in the provenance, because
+    the trace panel is meant to be machine-exact, but the sentence a person
+    reads is in words.
+    """
+    from app.core.explain import render_template
+
+    provenance = {
+        "skill": "astronomy.unit_conversions",
+        "skill_name": "Unit Conversions",
+        "why_needed": {
+            "goal": "Basic Astronomy Telescopes",
+            "path_to_goal": ["astronomy.basic_geometry", "astronomy.basic_physics"],
+            "path_to_goal_names": ["Basic Geometry", "Basic Physics"],
+            "is_goal": False,
+        },
+        "your_level": {"score": 0.15, "source": "diagnostic"},
+        "why_this_resource": {
+            "title": "List of conversion factors", "reasons": ["free to access"],
+            "beat_alternatives": 2,
+        },
+        "placement": {"week": 1, "hours": 1.0, "unlock_count": 8},
+    }
+    sentence = render_template(provenance)
+    assert "Basic Geometry then Basic Physics" in sentence
+    assert "astronomy." not in sentence
+
+
+def test_a_plan_built_before_names_existed_still_explains_itself() -> None:
+    """Stored provenance is old data; it must degrade, not crash."""
+    from app.core.explain import render_template
+
+    provenance = {
+        "skill": "prog.python_basics",
+        "skill_name": "Python Basics",
+        "why_needed": {"goal": "ML Engineer", "path_to_goal": ["ml.numpy"], "is_goal": False},
+        "your_level": {"score": 0.4, "source": "self"},
+        "why_this_resource": {"title": "A course", "reasons": [], "beat_alternatives": 0},
+        "placement": {"week": 2, "hours": 3.0, "unlock_count": 2},
+    }
+    assert "ml.numpy" in render_template(provenance)

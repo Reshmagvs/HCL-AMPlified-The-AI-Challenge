@@ -71,9 +71,12 @@ def affordable(item_count: int) -> tuple[bool, float]:
     provider = get_provider()
     if not provider.available():
         return False, 0.0
-    rate = max(provider.tokens_per_second(), 0.1)
-    projected = item_count * TOKENS_PER_RATIONALE / rate
-    return projected <= get_settings().narration_budget_seconds, projected
+    tokens = item_count * TOKENS_PER_RATIONALE
+    budget = get_settings().narration_budget_seconds
+    # Through the provider so that the queue counts too: a plan narrated while
+    # a subject is being built waits for the build first, and the arithmetic
+    # over tokens alone cannot see that.
+    return provider.affords(tokens, budget), provider.projected_seconds(tokens)
 
 
 def narrate_all(provenances: list[dict[str, Any]]) -> tuple[list[str], bool]:

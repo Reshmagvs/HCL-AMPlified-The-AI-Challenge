@@ -26,22 +26,29 @@ asked for.
 ```bash
 git clone https://github.com/retr0alfred/PathFinder.git
 cd PathFinder
-run.bat
+start.bat
 ```
 
-That is the whole thing. `run.bat` finds Python and Node, creates the virtual
+That is the whole thing. `start.bat` finds Python and Node, creates the virtual
 environment, installs dependencies **only when `requirements.txt` actually
 changed**, writes `.env`, prepares the database, downloads the sentence-
-embedding model once (~130 MB), starts both servers, waits for the health check
-and opens a browser.
+embedding model once (~130 MB), checks the local language model (starting its
+daemon if it is installed but idle), starts both servers, waits for the health
+check and opens a browser.
 
 | Command | Effect |
 |---|---|
-| `run.bat` | Normal start |
-| `run.bat --reset` | Wipe venv, node_modules and the database, rebuild from scratch |
-| `run.bat --backend` | API only (useful before Node is installed) |
-| `run.bat --no-browser` | Do not open a browser |
+| `start.bat` | Normal start |
+| `start.bat --reset` | Wipe venv, node_modules and the database, rebuild from scratch |
+| `start.bat --backend` | API only (useful before Node is installed) |
+| `start.bat --no-browser` | Do not open a browser |
 | `./run.sh` | macOS / Linux equivalent, same flags |
+
+`run.bat` is the same script under its older name; both work.
+
+It refuses to start when something already holds port 8000, rather than
+reporting a stranger's server as healthy — which is exactly what a stale process
+from a previous run looks like from a health check.
 
 Web `http://localhost:5173` · API `http://127.0.0.1:8000` · docs `/docs`
 
@@ -72,17 +79,25 @@ open-world half, and they are the only thing that needs one.
 ollama pull qwen2.5:3b-instruct
 ```
 
-Set `LLM_PROVIDER=auto` (the default) and Lodestar uses it when the daemon is
-running and stays deterministic when it is not.
+`LLM_PROVIDER=ollama` uses it and nothing else; `auto` uses it when the daemon
+is answering and stays deterministic when it is not. Neither ever reaches for a
+hosted model — `gemini` happens only when it is named explicitly.
 
 The default model was chosen by measurement on a four-core Ryzen 7 3700U with no
 usable GPU, not by reputation:
 
 | Model | Throughput | Verdict |
 |---|---|---|
-| `qwen2.5:0.5b` | 25.7 tok/s | Too weak to produce a coherent prerequisite structure |
-| **`qwen2.5:3b-instruct`** | **11.0 tok/s** | **The default** |
-| `qwen2.5:7b-instruct-q4_K_M` | 4.8 tok/s | Better answers; 119 s just to load. Unusable here |
+| `qwen2.5:0.5b` | ~26 tok/s | Too weak to produce a coherent prerequisite structure |
+| **`qwen2.5:3b-instruct`** | **3.8–11 tok/s** | **The default** |
+| `qwen2.5:7b-instruct-q4_K_M` | ~5 tok/s | Better answers; 119 s just to load. Unusable here |
+
+The 3B figure is a range because it is one: the same model on the same laptop
+measures 11 tok/s idle and 3.8 tok/s with the API, the dev server and a browser
+running. Nothing here assumes a number — throughput is read from the last real
+generation and callers budget against that. Decoding threads were measured too,
+and the obvious-sounding rule was wrong: all eight logical cores beat the four
+physical ones by 36%.
 
 Two things make a model this small good enough to depend on.
 
@@ -94,11 +109,22 @@ dependency structure. That one change is the difference between the local model
 being a toy and being the thing the product runs on.
 
 **Slow work is never put in front of a learner.** Providers report their
-measured throughput and callers do the arithmetic. Narrating forty path items is
-worth doing at 200 tok/s and absurd at 5, so it happens on a hosted model and is
-skipped on this one — the reason text is computed deterministically either way.
-Building a subject takes about two minutes here, so it runs as a background job
-with real progress rather than inside a request.
+measured throughput and callers do the arithmetic: `provider.affords(tokens,
+seconds)`. Narrating forty path items is worth doing at 200 tok/s and absurd at
+4, so it happens on a hosted model and is skipped on this one. The same rule
+governs intake, chat and goal resolution, each of which has a deterministic
+answer already computed — so exceeding the budget costs phrasing, never
+correctness.
+
+This is measured, not assumed. Unbudgeted and unconstrained, one intake message
+took **246 seconds** on this laptop; budgeted, it takes **0.5 s** and the reply
+is better, because the deterministic extractor had the goal the model kept
+missing. Intake declines the model on a second ground too: when the rules
+already have the goal and the weekly hours there is nothing left to find.
+
+Building a subject is the work only the model can do, so it is never budgeted
+away — it runs as a background job with real progress instead, and takes several
+minutes on a CPU this slow.
 
 If the model is not installed, everything except *building a new subject* works
 exactly as before, and the interface says so rather than silently degrading.
@@ -436,9 +462,17 @@ An honest account, because the boundaries are as informative as the features.
 - **Discovery leans on Wikimedia when DuckDuckGo is blocked**, which it often
   is. Wikipedia and Wikibooks are excellent references and poor exercise sets, so
   a maths subject built during a block gets explanation without practice.
-- **A build takes about two minutes on a CPU** — roughly 80 s of it generation at
-  5 tok/s. It is a background job with real progress and the result is cached
-  forever, but the first person to ask does wait.
+- **A build takes about four minutes on this CPU** — measured 223–230 s across
+  three subjects, roughly 100 s of it generating the syllabus at under four
+  tokens a second. It is a background job with real progress and the result is
+  cached forever and shared, but the first person to ask does wait.
+- **Placement questions for a brand-new subject are not ready when the plan
+  is.** They are written behind the learner, so the check ends having asked
+  nothing and says so (`done_reason: questions_not_ready`) rather than claiming
+  a placement it did not make.
+- **A generated placement question can be incoherent.** One asked which note a
+  flat sign represents and offered four note names. The structure is validated;
+  the musicianship is a 3B model's.
 - **The skill graph is hand-authored and therefore opinionated.** 152 nodes and
   255 edges curated by one person. Several edges are defensible rather than
   incontestable — `prog.numpy` requiring `math.linear_algebra`, for instance.

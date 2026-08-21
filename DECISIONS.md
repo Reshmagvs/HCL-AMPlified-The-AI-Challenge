@@ -636,3 +636,84 @@ onto the learner's plan.
 - When DuckDuckGo is blocked, a maths subject gets Wikipedia explanation and no
   exercise sets.
 - A first build costs about two minutes, roughly 80 s of it generation.
+
+---
+
+## Phase 13 — making it usable on the machine it runs on
+
+Phase 12 made the product open-world and proved the local model could design a
+curriculum. Driving the finished thing end to end, as a learner rather than as a
+test, found something the test suite could not: it was correct and unusable.
+
+**A single intake message took four minutes.** The suite runs against the
+offline provider, where extraction is instant, so nothing failed. Measured
+against the real one: a 441-token prompt, an unconstrained `format: json`, and
+`max_tokens` left at its 2048 default. The model rambled to near the cap at a
+few tokens a second, twice, because a malformed reply earns a retry.
+
+The narration layer already had the answer to this — it asks the provider how
+fast it is and declines work that will not fit a budget — but the answer had
+only been applied where the bug had already bitten. It is now a property of the
+provider rather than of one caller:
+
+```python
+provider.affords(expected_tokens, budget_seconds)
+```
+
+Intake, chat and goal resolution each declare what a reply costs and what the
+learner will wait, and each has a deterministic answer already computed, so
+exceeding the budget costs phrasing and never correctness. Intake also declines
+on a second ground that is not about speed at all: **when the rules already have
+the goal and the hours, there is nothing left for the model to find.** It would
+be rewording an acknowledgement while the learner waits.
+
+Intake went from **246 s to 0.5 s**, and the replies got better, not worse — the
+deterministic extractor had the goal the model kept missing.
+
+The budget is in seconds, and both tests of it are about the provider's measured
+speed rather than its name, so a GPU or a hosted model starts using the language
+layer again with nothing reconfigured.
+
+**Threads were tuned by reasoning instead of measurement.** The code halved the
+logical core count on the theory that hyperthread contention costs more than the
+extra threads earn. Same model, same prompt, 171 generated tokens:
+
+| `num_thread` | Time | Throughput |
+|---|---|---|
+| 4 (physical) | 60.4 s | 2.8 tok/s |
+| 8 (logical) | 45.6 s | **3.8 tok/s** |
+
+36% slower for a plausible-sounding reason nobody had checked. It is measured
+now, and the recorded 11 tok/s figure has been corrected to a range: the same
+model on the same laptop measures 11 tok/s idle and 3.8 tok/s with the API, the
+dev server and a browser running. Nothing in the product assumes either number —
+throughput is read from the last real generation.
+
+**`--reload` was quietly hostile.** The launcher started uvicorn with the
+reloader, which restarts the process on any file write. A restart drops the
+in-memory job table, so a subject being built in the background stopped without
+saying so. Its multiprocessing child also inherits the listening socket and
+outlives its parent — which is the whole explanation for the "port 8000 held by
+a process that does not exist" that had been worked around for two sessions. The
+launcher no longer starts a reloader, and it now refuses to run at all when
+something else already holds the port, rather than reporting a stranger's server
+as healthy.
+
+**The launcher checked for the wrong thing.** `where ollama` answers "is the
+binary installed", which is not the question. An installed binary with no daemon
+running, or a daemon without the configured model pulled, both look like a
+working installation from a batch file, and the product then falls back to
+templates without ever saying why. `scripts/check_model.py` now probes the
+daemon, names the model from the configuration, starts the daemon if it is
+installed but idle, and prints the exact `ollama pull` command when the model is
+missing.
+
+**Small honesty fixes.** A built subject was displayed to the learner under the
+model's slug — "photosynthesis-and-cell-biology" — because `readable()` was
+applied to skill names and not to the topic itself. Titles now keep their
+joining words lower-case, so it reads "Photosynthesis and Cell Biology" rather
+than like a filename. The degraded banner claimed "the writing assistant is
+unavailable", which is usually false: it is available and was declined. And the
+syllabus prompt asked for a `summary` field the schema does not carry and "3 to
+6" keywords where the schema allows two or three — the model paid tokens for
+both.

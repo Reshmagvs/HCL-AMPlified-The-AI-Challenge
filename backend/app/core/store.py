@@ -230,6 +230,19 @@ def append_topic(
     return record
 
 
+def write_courses(courses: list[dict[str, Any]]) -> None:
+    """Replace the discovered catalogue wholesale, atomically.
+
+    For maintenance that rewrites a field across every entry -- re-reading
+    descriptions after the extractor improves, for instance. Deliberately not
+    used by the expansion path, which appends under the same lock so two
+    concurrent builds cannot lose each other's work.
+    """
+    with _write_lock:
+        _write_json(generated_dir() / COURSES_FILE, sorted(courses, key=lambda e: e["id"]))
+    logger.info("rewrote %d discovered resources", len(courses))
+
+
 def alias_topic(goal_text: str, record: dict[str, Any]) -> None:
     """Point another phrasing at a topic that has already been built."""
     with _write_lock:

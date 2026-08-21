@@ -197,7 +197,14 @@ export type Provenance = {
   skill: string
   skill_name?: string
   track?: string
-  why_needed?: { goal: string; path_to_goal: string[]; is_goal: boolean }
+  why_needed?: {
+    goal: string
+    /** Skill ids: the machine-readable trace shown in the "why" panel. */
+    path_to_goal: string[]
+    /** The same chain in words. Absent on plans built before it existed. */
+    path_to_goal_names?: string[]
+    is_goal: boolean
+  }
   your_level?: { score: number; source: string; evidence_q_ids: number[]; threshold: number }
   why_this_resource?: {
     resource_id: string | null

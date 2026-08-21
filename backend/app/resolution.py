@@ -37,12 +37,17 @@ from app.core import retrieval
 from app.core.embeddings import embed_one
 from app.core.skill_graph import SkillGraph, load_graph
 from app.llm import get_provider
+from app.config import get_settings
 from app.llm.base import ProviderUnavailable, SchemaViolation, call_with_schema
 from app.llm.prompts import GOAL_RESOLUTION
 
 logger = logging.getLogger(__name__)
 
 CANDIDATE_COUNT = 8
+# The reply is a handful of ids picked off a shortlist, not prose.
+SELECTION_MAX_TOKENS = 200
+EXPECTED_SELECTION_TOKENS = 60
+
 MAX_GOAL_NODES = 3
 CLAIM_CANDIDATES = 3
 _WORD_RE = re.compile(r"[a-z0-9+#.]+")
@@ -155,12 +160,17 @@ def resolve_goal(goal_text: str) -> tuple[list[str], list[dict[str, Any]], bool]
     fallback = [candidates[0]["skill_id"]]
 
     provider = get_provider()
-    if not provider.available():
+    # The shortlist is already ordered by similarity and its first entry is the
+    # fallback, so declining the call costs a refinement, not the answer. Worth
+    # spending a few seconds on at commit time; not worth a minute.
+    if not provider.affords(EXPECTED_SELECTION_TOKENS, get_settings().interactive_budget_seconds):
         return fallback, candidates, True
 
     prompt = GOAL_RESOLUTION.format(goal_text=goal_text, candidates=_candidate_block(candidates))
     try:
-        selection = call_with_schema(provider, prompt, GoalSelection, temperature=0.1, max_tokens=400)
+        selection = call_with_schema(
+            provider, prompt, GoalSelection, temperature=0.1, max_tokens=SELECTION_MAX_TOKENS
+        )
     except (SchemaViolation, ProviderUnavailable) as exc:
         logger.info("goal resolution degraded: %s", str(exc)[:140])
         return fallback, candidates, True

@@ -366,3 +366,97 @@ cases that must *not* produce a goal.
 - When DuckDuckGo is blocking, a maths subject gets Wikipedia explanation and no
   exercise sets.
 - The first person to ask for a subject waits about two minutes.
+
+---
+
+## 17. Driving the finished product, as a learner
+
+Section 16 tested the parts. This section is one person going from a blank text
+box to a plan, against the local model, with nothing stubbed. It found things
+the suite could not, because the suite runs on the offline provider where every
+model call is instant.
+
+| # | Item | Result |
+|---|---|---|
+| 17.1 | `start.bat` from cold: deps, model check, seed, API, web | **PASS** — healthy, both servers |
+| 17.2 | Backend suite | **PASS** — 215 passed, 1 conditional skip |
+| 17.3 | Frontend production build | **PASS** — 0 TypeScript errors, 634 kB / 187 kB gzipped |
+| 17.4 | Full journey, API, on a subject built live | **PASS** — 27/27 checks |
+| 17.5 | Intake latency | 246 s → **0.24 s** |
+| 17.6 | Intake latency *while a subject is being built* | **0.06–0.24 s** |
+| 17.7 | Build "Roman Republic History" | **PASS** — 9 skills, 27 resources, 223 s |
+| 17.8 | Build "Astronomy" | **PASS** — 9 skills, 27 resources, 148 s |
+| 17.9 | Build "Learn to Read Sheet Music" | **PASS** — 9 skills, 17 resources, 229 s |
+| 17.10 | Second request for a built subject | **PASS** — 0.03 s |
+| 17.11 | Every discovered resource still reachable | **PASS** — 111/111, 0 unreachable |
+| 17.12 | Intake, coverage and the build override, through the real UI | **PASS** |
+
+### What the journey covers
+
+Coverage on a curated goal and on a new one · starting a build and watching its
+four narrated stages · the cache · intake from a bare subject · commit and goal
+resolution into the subject just built · the placement check · path generation ·
+that every teaching step carries a verified resource and every step an
+explanation · that no discovered resource carries an invented rating · dashboard
+· graph · adaptation to a `too_hard` event · what-if · grounded chat.
+
+### Bugs found by driving it, and their fixes
+
+- **One intake message took 246 seconds.** Unconstrained decoding with
+  `max_tokens` at its 2048 default, on a model doing under four tokens a second,
+  twice, because a malformed reply earns a retry. Fixed three ways: a decoding
+  schema, a realistic token cap, and a latency budget the provider is asked
+  about directly. It now answers in 0.24 s, and the reply is better — the
+  deterministic extractor had the goal the model kept missing.
+- **An interactive request queued behind a background build.** A local daemon
+  answers one request at a time, so an intake turn asked for during a syllabus
+  generation waited for the syllabus. Token arithmetic cannot see a queue, so
+  the budget check now asks whether the model is already occupied.
+- **Threads were tuned by reasoning rather than measurement**, costing 36%. All
+  eight logical cores beat the four physical ones: 3.8 tok/s against 2.8. The
+  recorded 11 tok/s is now a range, because it is one — that figure was measured
+  on an idle machine, and the product measures its own throughput at runtime.
+- **`--reload` in the launcher silently killed builds.** A restart drops the
+  in-memory job table, and any file write triggers one. Its multiprocessing
+  child also inherits the listening socket and outlives its parent, which is the
+  entire explanation for the "port 8000 held by a process that does not exist"
+  seen in two earlier sessions. The launcher no longer starts a reloader, and it
+  refuses to run when something already holds the port.
+- **The launcher asked whether Ollama was installed**, which is not the
+  question. `scripts/check_model.py` probes the daemon, starts it if it is
+  installed but idle, names the configured model and prints the exact
+  `ollama pull` command when it is missing.
+- **A built subject was shown to the learner as `photosynthesis-and-cell-biology`.**
+  `readable()` was applied to skill names and not to the topic. Titles now also
+  keep joining words lower-case, so it reads "Photosynthesis and Cell Biology".
+- **109 of 111 discovered resources described themselves as site furniture** —
+  "Jump to content Main menu Main page…" — because the fallback when a page has
+  no meta description was the first 400 characters a reader sees. Descriptions
+  now come from the document's first substantial paragraph, skipping citation
+  blobs and markup residue. `scripts/refresh_descriptions.py` re-read all 111
+  from their live pages; all 111 were still reachable.
+- **The degraded banner claimed the writing assistant was unavailable**, which
+  is usually false: it is available and was declined for being too slow.
+- **The syllabus prompt asked for a field the schema does not carry** (`summary`)
+  and for "3 to 6" keywords where the schema allows two or three. The model was
+  paying tokens for both.
+- **Every step told the learner it "leads into astronomy.basic_geometry".** The
+  dependency chain in a rationale was a list of database keys. It reads in words
+  now; the ids stay in the trace panel, which is meant to be machine-exact.
+- **Two test doubles had drifted from the provider contract** and broke when it
+  grew a method. They subclass `LLMProvider` now, so the compiler keeps them
+  honest.
+
+### Still open after this pass
+
+- A build takes about four minutes on this CPU: 82–106 s of it generating the
+  syllabus at under four tokens a second, the rest live search and verification.
+  It is a background job with real progress, cached forever and shared.
+- Placement questions for a brand-new subject are not ready when the plan is.
+  The check says `questions_not_ready` and the plan assumes a fresh start,
+  rather than claiming a placement it did not make.
+- A generated placement question can be incoherent — one asked which note a flat
+  sign represents and offered four note names. Structure is validated;
+  musicianship is not.
+- Two of 111 discovered resources still describe themselves with navigation
+  text, because those pages contain no paragraph of prose at all.

@@ -25,6 +25,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlmodel import Session, select
 
+from app.config import get_settings
 from app.core.mastery import SELF_REPORT_CAP
 from app.core.skill_graph import load_graph
 from app.core.text_profile import extract_profile, next_question
@@ -55,6 +56,44 @@ class ExtractionResult(BaseModel):
 
     assistant_message: str = Field(min_length=1, max_length=600)
     profile: ProfileDraft = Field(default_factory=ProfileDraft)
+
+
+# A complete, well-behaved reply measured 119 tokens. The cap is generous
+# against that; the point of setting one at all is that the default of 2048
+# let the model ramble for four minutes on a machine doing three tokens a
+# second, for a turn the learner is watching.
+EXTRACTION_MAX_TOKENS = 400
+EXPECTED_EXTRACTION_TOKENS = 150
+
+# The decoding constraint. Stricter than ``ExtractionResult``, which stays
+# forgiving so a slightly malformed but usable reply is repaired rather than
+# discarded -- the same split the syllabus generator makes.
+_PROFILE_FIELDS: dict[str, Any] = {
+    "interests": {"type": ["array", "null"], "items": {"type": "string"}},
+    "experience_level": {"type": ["string", "null"],
+                         "enum": ["beginner", "intermediate", "advanced", None]},
+    "completed_skills": {"type": ["array", "null"], "items": {"type": "string"}},
+    "goal_text": {"type": ["string", "null"]},
+    "hours_per_week": {"type": ["number", "null"]},
+    "target_date": {"type": ["string", "null"]},
+    "format_pref": {"type": ["string", "null"],
+                    "enum": ["video", "text", "interactive", "any", None]},
+    "cost_pref": {"type": ["string", "null"], "enum": ["free", "any", None]},
+    "language": {"type": ["string", "null"]},
+    "low_bandwidth": {"type": ["boolean", "null"]},
+}
+EXTRACTION_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "assistant_message": {"type": "string", "maxLength": 600},
+        "profile": {
+            "type": "object",
+            "properties": _PROFILE_FIELDS,
+            "required": ["goal_text", "hours_per_week"],
+        },
+    },
+    "required": ["assistant_message", "profile"],
+}
 
 
 def _merge(base: dict[str, Any], incoming: dict[str, Any]) -> dict[str, Any]:
@@ -120,6 +159,35 @@ def intake_message(
     )
 
 
+def _worth_a_call(heuristic: dict[str, Any], provider) -> bool:
+    """Whether asking the model for this turn is worth what it costs.
+
+    Two reasons to decline, and neither of them degrades the answer.
+
+    **The rules already have everything that matters.** ``goal_text`` and
+    ``hours_per_week`` are the only fields a plan cannot be built without. When
+    both are in hand the model would be rephrasing an acknowledgement, and the
+    learner would wait for it.
+
+    **The model cannot answer inside the budget.** At three tokens a second a
+    150-token reply is fifty seconds of a person watching a text box. The
+    deterministic extractor has already produced a correct profile and a
+    sensible next question, so the cost of declining is phrasing.
+
+    Neither test is about which provider is configured, so a faster model or a
+    machine with a GPU starts using the model again with nothing changed.
+    """
+    if _is_ready(heuristic):
+        return False
+    if not provider.affords(EXPECTED_EXTRACTION_TOKENS, get_settings().interactive_budget_seconds):
+        logger.info(
+            "intake extraction would take about %.0fs at %.1f tok/s -- using the rules",
+            provider.projected_seconds(EXPECTED_EXTRACTION_TOKENS), provider.tokens_per_second(),
+        )
+        return False
+    return True
+
+
 def _extract(session: IntakeSession, latest: str) -> tuple[dict[str, Any], str, bool]:
     """Extract structure with both readers, and take the union of what they find.
 
@@ -141,11 +209,19 @@ def _extract(session: IntakeSession, latest: str) -> tuple[dict[str, Any], str, 
     if not provider.available():
         return heuristic, next_question(heuristic), True
 
+    if not _worth_a_call(heuristic, provider):
+        return heuristic, next_question(heuristic), False
+
     prompt = INTAKE_EXTRACTION.format(
         transcript=_transcript(session), profile=session.profile or "{}"
     )
     try:
-        result = call_with_schema(provider, prompt, ExtractionResult, temperature=0.2)
+        result = call_with_schema(
+            provider, prompt, ExtractionResult,
+            temperature=0.2,
+            max_tokens=EXTRACTION_MAX_TOKENS,
+            json_schema=EXTRACTION_SCHEMA,
+        )
     except (SchemaViolation, ProviderUnavailable) as exc:
         logger.info("intake extraction degraded: %s", str(exc)[:140])
         return heuristic, next_question(heuristic), True

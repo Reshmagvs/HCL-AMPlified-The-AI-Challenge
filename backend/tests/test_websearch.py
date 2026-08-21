@@ -185,3 +185,50 @@ def test_relevance_ranking_puts_the_matching_page_first() -> None:
     ]
     ranked = websearch.rank_by_relevance("integration by parts practice", pages)
     assert ranked[0][0].url == "https://b.org/2"
+
+
+# --------------------------------------------------------------------------- #
+# Descriptions
+# --------------------------------------------------------------------------- #
+NAV_PAGE = """
+<html><head><title>Music Theory/How to read Music</title></head><body>
+<div id="mw-navigation">Jump to content Main menu Main page Help Browse Recent changes</div>
+<p>Edit</p>
+<p>This Wikibook is here to give the reader an idea of how to read music, starting
+from the staff and working up to key signatures and time signatures.</p>
+</body></html>
+"""
+
+
+def test_a_description_comes_from_prose_not_from_the_navigation() -> None:
+    """The regression: a page described itself as "Jump to content Main menu"."""
+    described = websearch._describe(NAV_PAGE, {})
+    assert described.startswith("This Wikibook")
+    assert "Main menu" not in described
+
+
+def test_a_short_paragraph_is_not_a_description() -> None:
+    """"Edit" is a link, not what the page is about."""
+    assert "Edit" != websearch._describe(NAV_PAGE, {})
+
+
+def test_the_page_s_own_description_still_wins() -> None:
+    meta = {"og:description": "A gentle introduction to reading standard musical notation."}
+    assert websearch._describe(NAV_PAGE, meta) == meta["og:description"]
+
+
+def test_a_paragraph_full_of_markup_residue_is_skipped() -> None:
+    """Citation blobs survive tag-stripping because they are text, not markup."""
+    body = (
+        '<html><body><p>Photosynthesis </ref>"}},"i":0}}]}> is a process used by plants '
+        "and other organisms to convert light into chemical energy over time.</p>"
+        "<p>Some organisms also perform anoxygenic photosynthesis, which does not "
+        "produce oxygen but does store energy in chemical bonds.</p></body></html>"
+    )
+    described = websearch._describe(body, {})
+    assert described.startswith("Some organisms")
+
+
+def test_a_page_with_no_prose_at_all_still_describes_itself() -> None:
+    """Degraded, not empty: an entry with no description reads as a bug to a learner."""
+    assert websearch._describe("<html><body><div>Sign in Register</div></body></html>", {})

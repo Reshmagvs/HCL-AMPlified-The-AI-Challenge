@@ -243,6 +243,12 @@ def normalised(name: str) -> str:
     return _SPACE_RE.sub(" ", name.strip().lower())
 
 
+# Joining words that stay lower-case inside a title. Never the first word.
+_MINOR_WORDS = frozenset(
+    "a an the and or of for in on to with from into via vs".split()
+)
+
+
 def readable(name: str) -> str:
     """Turn a machine-shaped name into one a learner should see.
 
@@ -251,17 +257,21 @@ def readable(name: str) -> str:
     onto the learner's plan. Separators become spaces, and a name with no
     capitals at all is title-cased. A name that already reads like prose is left
     exactly as written, so "Qubits and Superposition" keeps its lower-case
-    "and".
+    "and" -- and so does a title-cased one, because "Photosynthesis And Cell
+    Biology" reads like a filename, not like a subject.
     """
     cleaned = _SPACE_RE.sub(" ", name.replace("-", " ").replace("_", " ")).strip()
     if not cleaned:
         return name.strip()
-    if cleaned == cleaned.lower():
-        return " ".join(
-            word if len(word) <= 2 and word not in {"ai", "ml"} else word[:1].upper() + word[1:]
-            for word in cleaned.split()
-        )
-    return cleaned
+    if cleaned != cleaned.lower():
+        return cleaned
+    words = cleaned.split()
+    return " ".join(
+        word
+        if (index and word in _MINOR_WORDS) or (len(word) <= 2 and word not in {"ai", "ml"})
+        else word[:1].upper() + word[1:]
+        for index, word in enumerate(words)
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -622,7 +632,10 @@ def design_syllabus(goal_text: str) -> tuple[str, str, list[ProposedSkill]]:
         raise SchemaViolation(
             f"syllabus for {goal_text!r} had only {len(skills)} usable skills"
         )
-    topic = _SPACE_RE.sub(" ", syllabus.topic.strip())[:90] or goal_text[:90]
+    # Through ``readable`` for the same reason the skill names are: the model
+    # answers in the shape of the ids around it, and "quantum-computing" went
+    # straight onto the learner's screen as the name of their subject.
+    topic = readable(_SPACE_RE.sub(" ", syllabus.topic.strip())[:90]) or goal_text[:90]
     # Named after the topic rather than the model's suggestion. Asked for a
     # grouping it answered "fundamentals", which would put quantum computing and
     # organic chemistry in the same track and make every id ambiguous.

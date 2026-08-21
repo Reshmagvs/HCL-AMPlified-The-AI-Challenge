@@ -74,6 +74,17 @@ class Settings(BaseSettings):
     # reason text is computed either way; this only buys phrasing.
     narration_budget_seconds: float = 6.0
 
+    # How long a model may take on a turn the learner is waiting through --
+    # an intake reply, a chat answer, resolving a goal at commit time. Every
+    # one of those has a deterministic answer already computed, so exceeding
+    # the budget costs phrasing, never correctness.
+    #
+    # This exists because it was measured: unconstrained, a 3B model on this
+    # laptop turned a single intake message into four minutes. The budget is
+    # in seconds rather than a switch so the same code uses the model freely
+    # on hardware that can answer quickly.
+    interactive_budget_seconds: float = 25.0
+
     # --- Ops ---------------------------------------------------------------
     log_level: str = "INFO"
 

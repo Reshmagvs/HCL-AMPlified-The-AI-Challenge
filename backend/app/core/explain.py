@@ -104,6 +104,7 @@ def build_provenance(
     """Assemble the complete, self-contained reason for one path item."""
     node = graph.require(skill_id)
     chosen = ranked[0] if ranked else None
+    chain_ids = shortest_path_to_goal(graph, skill_id, goal_ids)
 
     return {
         "skill": skill_id,
@@ -111,7 +112,13 @@ def build_provenance(
         "track": node.track,
         "why_needed": {
             "goal": goal_label,
-            "path_to_goal": shortest_path_to_goal(graph, skill_id, goal_ids),
+            "path_to_goal": chain_ids,
+            # The same chain in words. Ids are the trace; a learner reading
+            # "it leads into astronomy.basic_geometry" is reading a database
+            # key, which is nobody's idea of an explanation.
+            "path_to_goal_names": [
+                graph.require(step).name if step in graph else step for step in chain_ids
+            ],
             "is_goal": skill_id in goal_ids,
         },
         "your_level": {
@@ -166,7 +173,9 @@ def render_template(provenance: dict[str, Any]) -> str:
     if why.get("is_goal"):
         first = f"{name} is your goal itself, and {_level_phrase(level)}."
     elif why["path_to_goal"]:
-        chain = " then ".join(why["path_to_goal"][:3])
+        # Names when they are there; ids for a plan built before they were.
+        steps = why.get("path_to_goal_names") or why["path_to_goal"]
+        chain = " then ".join(steps[:3])
         first = (
             f"{name} is needed for {why['goal']} because it leads into {chain}, "
             f"and {_level_phrase(level)}."

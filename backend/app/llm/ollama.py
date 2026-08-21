@@ -24,11 +24,15 @@ with ``minItems``, it produced thirteen skills with a sensible prerequisite
 structure. That single change is the difference between the local model being a
 toy and being the thing the product runs on.
 
-Measured throughput, for anyone choosing a model:
+Measured throughput, for anyone choosing a model. The 3B figure is a range
+because it is a range: the same model on the same laptop measured 11 tok/s on
+an otherwise idle machine and 3.8 tok/s with the API, the dev server and a
+browser running. Nothing here assumes a number -- ``tokens_per_second`` is
+updated from the last real generation and callers budget against that.
 
-    qwen2.5:0.5b                25.7 tok/s   too weak for structure
-    qwen2.5:3b-instruct         11.0 tok/s   the default
-    qwen2.5:7b-instruct-q4_K_M   4.8 tok/s   better answers, 119 s to load
+    qwen2.5:0.5b                    ~26 tok/s   too weak for structure
+    qwen2.5:3b-instruct           3.8-11 tok/s  the default
+    qwen2.5:7b-instruct-q4_K_M       ~5 tok/s   better answers, 119 s to load
 
     ollama pull qwen2.5:3b-instruct
 """
@@ -55,13 +59,25 @@ WARM_TIMEOUT = 300.0
 KEEP_ALIVE = "30m"
 
 
-def _physical_cores() -> int:
-    """Physical cores, falling back to half the logical count."""
+def _default_threads() -> int:
+    """How many threads to decode with, when the setting does not say.
+
+    Measured on this machine (4 physical cores, 8 logical), same model, same
+    prompt, 171 generated tokens:
+
+        num_thread=4   60.4 s   2.8 tok/s
+        num_thread=8   45.6 s   3.8 tok/s
+
+    An earlier version halved the logical count on the theory that
+    hyperthread contention would cost more than the extra threads earned. On
+    this hardware it does not, by 36%, so the count is measured rather than
+    assumed. ``OLLAMA_THREADS`` overrides it for a machine where the older
+    reasoning holds.
+    """
     try:
-        count = os.cpu_count() or 4
+        return max(1, os.cpu_count() or 4)
     except NotImplementedError:  # pragma: no cover - platform dependent
         return 4
-    return max(1, count // 2)
 
 
 class OllamaProvider(LLMProvider):
@@ -74,7 +90,7 @@ class OllamaProvider(LLMProvider):
         self.host = settings.ollama_host.rstrip("/")
         self.model = settings.ollama_model
         self.num_ctx = settings.ollama_num_ctx
-        self.threads = settings.ollama_threads or _physical_cores()
+        self.threads = settings.ollama_threads or _default_threads()
         self._available: bool | None = None
         # Conservative until a real call measures it: a small model on a CPU
         # is single-digit tokens a second, and assuming otherwise would let

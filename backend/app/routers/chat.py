@@ -29,6 +29,7 @@ from app.core.retrieval import catalog_index
 from app.core.skill_graph import load_graph
 from app.db import get_session
 from app.llm import get_provider
+from app.config import get_settings
 from app.llm.base import ProviderUnavailable, SchemaViolation, call_with_schema
 from app.llm.prompts import CHAT_GROUNDED
 from app.models import Event, PathItem
@@ -38,6 +39,12 @@ from app.schemas import ChatRequest, ChatResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/chat", tags=["chat"])
+
+# A grounded answer is short by design -- it cites path rows rather than
+# lecturing. 400 caps it; 120 is what one actually costs, and is what the
+# budget check is asked about.
+REPLY_MAX_TOKENS = 400
+EXPECTED_REPLY_TOKENS = 120
 
 MAX_QUESTION_CHARS = 500
 CONTEXT_ITEM_LIMIT = 24
@@ -66,7 +73,8 @@ def _context_block(learner, items: list[PathItem], version: int) -> tuple[str, l
         name = graph.require(item.skill_id).name if item.skill_id in graph else item.skill_id
         resource = catalog.get(item.course_id) if item.course_id else None
         title = resource.title if resource else "no resource bound"
-        chain = (item.provenance.get("why_needed") or {}).get("path_to_goal") or []
+        why = item.provenance.get("why_needed") or {}
+        chain = why.get("path_to_goal_names") or why.get("path_to_goal") or []
         because = f"; needed because it leads to {' -> '.join(chain[:3])}" if chain else ""
         level = (item.provenance.get("your_level") or {}).get("score")
         measured = f"; your level {level:.0%}" if isinstance(level, (int, float)) else ""
@@ -158,10 +166,18 @@ def chat(
     # a debug echo of the context block, whereas the rule-based answer above is
     # drawn from the same rows and reads like an answer. A real model improves
     # the phrasing; it does not improve the facts.
-    if provider.name != "mock" and provider.available():
+    # ...and only when it can answer while the learner is still reading the
+    # question. A chat reply runs to about 120 tokens; at three tokens a second
+    # that is forty seconds of a blinking cursor for a rephrasing of an answer
+    # already assembled from the same rows.
+    if provider.name != "mock" and provider.affords(
+        EXPECTED_REPLY_TOKENS, get_settings().interactive_budget_seconds
+    ):
         prompt = CHAT_GROUNDED.format(context=context, question=question)
         try:
-            reply = call_with_schema(provider, prompt, ChatReply, temperature=0.3, max_tokens=600).reply
+            reply = call_with_schema(
+                provider, prompt, ChatReply, temperature=0.3, max_tokens=REPLY_MAX_TOKENS
+            ).reply
             degraded = False
         except (SchemaViolation, ProviderUnavailable) as exc:
             logger.info("chat degraded for learner %s: %s", learner_id, str(exc)[:120])

@@ -128,12 +128,17 @@ export function Callout({
  * the resources are all computed without a model, so the only thing affected is
  * how the sentences read. Saying that plainly stops the banner from looking like
  * a failure the learner has to act on.
+ *
+ * It also does not claim the model is *unavailable*, because usually it is not:
+ * on a laptop CPU the writing layer is skipped because it would take longer
+ * than the wait is worth. Saying "unavailable" would be a guess about a cause,
+ * and a wrong one most of the time.
  */
 export function DegradedBanner({ show, what = 'wording' }: { show: boolean; what?: string }) {
   if (!show) return null
   return (
     <Callout tone="warn" title={`Plain ${what} for now`}>
-      The writing assistant is unavailable, so these sentences come from a template. Your ordering,
+      These sentences come from a template rather than the writing assistant. Your ordering,
       schedule and resources are calculated the same way either way — nothing below is affected.
     </Callout>
   )

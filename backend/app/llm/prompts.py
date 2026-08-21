@@ -331,8 +331,7 @@ mathematics a topic requires, for instance), and end at the goal itself.
 For each skill give:
   name        a specific skill, not a chapter title ("Qubits and Superposition",
               not "Chapter 1")
-  summary     one sentence on what the learner will be able to do
-  keywords    3 to 6 search terms for this skill
+  keywords    2 or 3 search terms for this skill
   difficulty  1 (absolute beginner) to 5 (advanced)
   hours       realistic study hours for a motivated beginner, 1 to 40
   requires    array of indices of EARLIER skills in this list that must come
@@ -349,7 +348,7 @@ Return JSON only, no prose, no markdown fences:
 {{"topic": "<short name for the subject>",
   "track": "<one or two word grouping, lowercase>",
   "skills": [
-    {{"name": "...", "summary": "...", "keywords": ["...", "..."],
+    {{"name": "...", "keywords": ["...", "..."],
       "difficulty": 1, "hours": 6, "requires": []}}
   ]}}
 """

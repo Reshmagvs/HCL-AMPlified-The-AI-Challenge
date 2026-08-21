@@ -146,6 +146,19 @@ _INTERACTIVE_RE = re.compile(
 )
 _LANG_RE = re.compile(r"<html[^>]+lang=['\"]([a-zA-Z_-]+)", re.I)
 
+# A paragraph, and how long one has to be before it counts as prose rather than
+# a caption, a breadcrumb or a link row.
+_PARAGRAPH_RE = re.compile(r"<p\b[^>]*>(.*?)</p>", re.I | re.S)
+MIN_PROSE_WORDS = 15
+# Wiki citation templates and footnote markers survive tag-stripping because
+# they are text, not markup, and they are not what the page is about.
+_TEMPLATE_RE = re.compile(r"\{\{.*?\}\}", re.S)
+_REF_RE = re.compile(r"\[\d{1,3}\]")
+# Markup that survived stripping. Prose does not contain braces or a closing
+# tag; a paragraph that still does is a data blob wearing a paragraph's clothes,
+# and the next paragraph is a better description than a repaired one.
+_RESIDUE_RE = re.compile(r"[{}]|</|\"\}")
+
 # Words that steer an open-web search towards teaching material and steer an
 # encyclopaedia search into nonsense.
 _LEARNING_WORDS_RE = re.compile(
@@ -418,13 +431,35 @@ def _metadata(body: str) -> dict[str, str]:
     return found
 
 
+def _first_prose(body: str) -> str:
+    """The first paragraph of the document that reads like prose.
+
+    The fallback used to be "the first 400 characters a reader sees", which on
+    a page with no meta description is the site's furniture. A Wikibooks page
+    described itself to learners as "Jump to content Main menu Main page..."
+    because that is genuinely the first visible text.
+
+    Asking the document's own structure is both better and more general than a
+    list of navigation phrases to strip: chrome lives in headers and menus,
+    while the thing the page is about is in its first substantial paragraph.
+    """
+    for match in _PARAGRAPH_RE.finditer(body):
+        candidate = _REF_RE.sub("", _TEMPLATE_RE.sub(" ", _plain(match.group(1))))
+        candidate = _SPACE_RE.sub(" ", candidate).strip()
+        if _RESIDUE_RE.search(candidate):
+            continue
+        if len(candidate.split()) >= MIN_PROSE_WORDS:
+            return candidate[:600]
+    return ""
+
+
 def _describe(body: str, meta: dict[str, str]) -> str:
     """The page's own description, preferring OpenGraph over the meta tag."""
     for key in ("og:description", "description", "twitter:description"):
         value = meta.get(key, "").strip()
         if len(value) >= 40:
             return value[:600]
-    return _visible(body, 400).strip()
+    return _first_prose(_SCRIPT_RE.sub(" ", body)) or _visible(body, 400).strip()
 
 
 def _classify_format(body: str, meta: dict[str, str]) -> str:

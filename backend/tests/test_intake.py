@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.core.mastery import SELF_REPORT_CAP
+from app.llm.base import LLMProvider
 
 CONVERSATIONS = [
     [
@@ -81,7 +82,9 @@ def test_off_list_ids_are_rejected(monkeypatch, graph) -> None:
     """An id outside the shortlist is dropped, not repaired."""
     from app import resolution
 
-    class Liar:
+    class Liar(LLMProvider):
+        """Answers, and answers with ids that do not exist."""
+
         name = "liar"
 
         def available(self):
@@ -111,7 +114,9 @@ def test_resolution_works_with_no_provider_at_all(monkeypatch, graph) -> None:
     from app import resolution
     from app.llm.base import ProviderUnavailable
 
-    class Dead:
+    class Dead(LLMProvider):
+        """Every call fails, which is what a stopped daemon looks like."""
+
         name = "dead"
 
         def available(self):

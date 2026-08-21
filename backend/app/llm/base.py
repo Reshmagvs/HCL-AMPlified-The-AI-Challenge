@@ -23,6 +23,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+import threading
 from abc import ABC, abstractmethod
 from typing import TypeVar
 
@@ -83,6 +84,40 @@ class LLMProvider(ABC):
         """
         return 1_000.0
 
+    def projected_seconds(self, expected_tokens: int) -> float:
+        """How long a reply of about this length would take on this provider.
+
+        The unit callers reason in. A budget expressed in seconds survives a
+        change of model, of machine and of hosting; one expressed as "skip on
+        local models" does not.
+        """
+        return expected_tokens / max(self.tokens_per_second(), 0.1)
+
+    def affords(self, expected_tokens: int, budget_seconds: float) -> bool:
+        """Whether a reply of that length arrives inside the budget.
+
+        Queue position counts as latency. A local daemon answers one request at
+        a time, so an intake turn asked for while a syllabus is being generated
+        does not take its own fifteen seconds -- it takes the syllabus's four
+        minutes and then its own. Arithmetic over tokens cannot see that, so the
+        wait is asked about directly.
+        """
+        return self.available() and not busy() and (
+            self.projected_seconds(expected_tokens) <= budget_seconds
+        )
+
+
+# Held for the duration of every generation, so that work a learner is waiting
+# through can ask whether the model is already occupied. It is deliberately not
+# used to *serialise* anything -- a provider that handles concurrent requests
+# still does -- only to make an occupied one visible.
+_in_flight = threading.Lock()
+
+
+def busy() -> bool:
+    """True while a generation is running somewhere in this process."""
+    return _in_flight.locked()
+
 
 def extract_json(raw: str) -> str:
     """Pull a JSON document out of prose or markdown fences.
@@ -133,9 +168,10 @@ def call_with_schema(
         # against the earlier contract -- including any a deployment supplies --
         # keeps working for every unconstrained call, which is most of them.
         extra = {"json_schema": json_schema} if json_schema is not None else {}
-        raw = provider.complete(
-            attempt_prompt, temperature=temperature, max_tokens=max_tokens, **extra
-        )
+        with _in_flight:
+            raw = provider.complete(
+                attempt_prompt, temperature=temperature, max_tokens=max_tokens, **extra
+            )
         try:
             return schema.model_validate(json.loads(extract_json(raw)))
         except (json.JSONDecodeError, ValidationError, TypeError) as exc:
