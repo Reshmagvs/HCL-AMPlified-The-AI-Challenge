@@ -46,3 +46,14 @@ Thumbs.db
 # Demo render output
 demo/audio/
 *.mp4
+
+# Root-level planning/notes docs: kept locally as working references, not
+# part of the published repo. README stays -- it's the front door.
+/*.md
+!/README.md
+
+# The problem-statement PDF: reference material, not part of the repo.
+/*.pdf
+
+# Claude Code project config: local dev-server launch settings, not shared.
+.claude/
