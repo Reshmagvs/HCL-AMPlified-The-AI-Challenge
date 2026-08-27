@@ -112,9 +112,10 @@ def _register_routers() -> None:
         intake,
         path,
         topics,
+        usage,
     )
 
-    for module in (intake, diagnostic, path, adaptation, chat, dashboard, graph, topics):
+    for module in (intake, diagnostic, path, adaptation, chat, dashboard, graph, topics, usage):
         app.include_router(module.router)
 
 

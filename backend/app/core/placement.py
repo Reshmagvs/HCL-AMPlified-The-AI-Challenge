@@ -84,8 +84,19 @@ def _schema(skill_ids: list[str]) -> dict:
 
 
 def _describe(node: SkillNode) -> str:
+    """One skill, with the subject it belongs to stated first.
+
+    The subject line is not decoration. Given only "Understand Basic SQL" a
+    model writes a database question, which is right; given only "Interpret a
+    Balance Sheet" it may still reach for pandas, because skill names read as
+    generic once they are out of context. Naming the subject on every line is
+    what keeps a business studies check about business studies.
+    """
+    kind = ", ".join(node.domain) if node.domain else "conceptual"
     return (
         f"- id: {node.id}\n"
+        f"  subject: {node.subject}\n"
+        f"  subject kind: {kind}\n"
         f"  name: {node.name}\n"
         f"  description: {node.description}\n"
         f"  keywords: {', '.join(node.keywords)}\n"

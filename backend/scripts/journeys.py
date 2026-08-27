@@ -5,7 +5,7 @@ way an evaluator would: six complete sessions driven through real HTTP calls,
 each asserting the behaviour a judge would look for, with every claim verified
 against the database rather than against the response that made it.
 
-    python -m scripts.journeys --base http://127.0.0.1:8010
+    python -m scripts.journeys --base http://127.0.0.1:8000
 
 Exits non-zero if any assertion fails.
 """
@@ -22,7 +22,7 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-BASE = "http://127.0.0.1:8010"
+BASE = "http://127.0.0.1:8000"
 RESULTS: list[tuple[str, str, bool, str]] = []
 _current = "setup"
 

@@ -228,17 +228,77 @@ def extract_profile(text: str, existing: dict[str, Any] | None = None) -> dict[s
     return profile
 
 
-def next_question(profile: dict[str, Any]) -> str:
-    """The single most useful thing still missing, phrased as a question."""
-    if not profile.get("goal_text"):
-        return "What would you like to be able to do? Describe the goal in your own words."
-    if not profile.get("hours_per_week"):
-        return (
-            f"Got it -- {profile['goal_text']}. Roughly how many hours a week "
-            "can you give this?"
-        )
-    if not profile.get("experience_level"):
-        return "How would you describe your current level: beginner, intermediate or advanced?"
-    if profile.get("cost_pref") in (None, "", "any"):
-        return "Should I stick to free resources only, or is paid material fine too?"
-    return "That is everything I need -- ready to build your path."
+# The order fields are asked for, most load-bearing first. A plan cannot be
+# built without the first two; the rest only shape it.
+FIELD_ORDER = ("goal_text", "hours_per_week", "experience_level", "cost_pref")
+
+# Each field gets several phrasings, tried in order. Repeating a question
+# verbatim is what a form does, not what a person does -- and when the first
+# phrasing did not land, saying exactly the same words again is the least
+# likely thing to help. Later attempts get more concrete, ending in an example
+# the learner can copy.
+_PHRASINGS: dict[str, tuple[str, ...]] = {
+    "goal_text": (
+        "What would you like to be able to do? Describe the goal in your own words.",
+        "I did not catch a subject in that. What is it you want to learn or be able to do?",
+        "Tell me just the subject and I will take it from there -- for example "
+        "\"business studies\", \"organic chemistry\" or \"become a data analyst\".",
+    ),
+    "hours_per_week": (
+        "Roughly how many hours a week can you give this?",
+        "How much time do you have for this each week? A rough number is fine.",
+        "Give me a number of hours a week -- for example \"about 5 hours a week\".",
+    ),
+    "experience_level": (
+        "How would you describe your current level: beginner, intermediate or advanced?",
+        "Are you starting from scratch with this, or do you already know some of it?",
+        "Just pick the closest one: beginner, intermediate or advanced.",
+    ),
+    "cost_pref": (
+        "Should I stick to free resources only, or is paid material fine too?",
+        "Do you want free material only, or is it fine to include paid courses?",
+        "Reply \"free\" for free-only, or \"any\" to include paid material.",
+    ),
+}
+
+# Said once the profile is complete. Varied for the same reason as the
+# questions: a learner who keeps typing should not get one sentence on a loop.
+_READY_LINES = (
+    "That is everything I need -- ready to build your path.",
+    "Noted. You have everything needed for a plan whenever you are ready.",
+    "Got it. Press \"Build my plan\" whenever you want to start.",
+)
+
+
+def missing_field(profile: dict[str, Any]) -> str | None:
+    """The next field worth asking for, or None when the profile is complete."""
+    for field in FIELD_ORDER:
+        value = profile.get(field)
+        if field == "cost_pref":
+            if value in (None, "", "any"):
+                return field
+        elif not value:
+            return field
+    return None
+
+
+def next_question(profile: dict[str, Any], attempt: int = 0) -> str:
+    """The single most useful thing still missing, phrased as a question.
+
+    ``attempt`` is how many times this same field has already been asked for.
+    It selects a different phrasing rather than repeating one -- the defect
+    this argument exists to fix was a learner being shown the identical
+    sentence on every turn because the rules could not read their answer and
+    had no memory that they had already asked.
+    """
+    field = missing_field(profile)
+    if field is None:
+        return _READY_LINES[min(attempt, len(_READY_LINES) - 1)]
+
+    phrasings = _PHRASINGS[field]
+    question = phrasings[min(attempt, len(phrasings) - 1)]
+
+    # The first time we can name the goal back, do -- it shows the goal landed.
+    if field == "hours_per_week" and attempt == 0 and profile.get("goal_text"):
+        return f"Got it -- {profile['goal_text']}. {question}"
+    return question

@@ -163,7 +163,7 @@ export default function Path() {
             step={1}
             value={hours ?? data.hours_per_week}
             onChange={(e) => setHours(Number(e.target.value))}
-            className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-paper-300 accent-clay-500"
+            className="slider"
             aria-label="Hours per week"
           />
           <span className="w-24 shrink-0 text-right font-mono text-sm text-ink-700">

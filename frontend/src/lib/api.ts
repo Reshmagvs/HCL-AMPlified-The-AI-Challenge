@@ -330,6 +330,44 @@ export type ChatReply = {
 /* ------------------------------------------------------------------ */
 /* Endpoints                                                           */
 /* ------------------------------------------------------------------ */
+/**
+ * What the language layer is doing and what it has spent.
+ *
+ * `credit_limit` is nullable on purpose: a free-tier key has no published
+ * allowance, and the interface shows counts rather than inventing a ceiling.
+ */
+export type Usage = {
+  provider: string
+  chain: string[]
+  tokens_per_second: number
+  openrouter: {
+    provider: string
+    model: string
+    free_models_available: number
+    cooling_down: string[]
+    retired: string[]
+    tokens_per_second: number
+    limit_published: boolean
+    session: {
+      requests: number
+      failures: number
+      prompt_tokens: number
+      completion_tokens: number
+      total_tokens: number
+      cost: number
+      since: number
+    }
+    account: {
+      configured: boolean
+      reachable?: boolean
+      free_tier?: boolean
+      credit_limit: number | null
+      credit_used: number | null
+      credit_used_today: number | null
+    }
+  } | null
+}
+
 export const api = {
   health: () => request<Health>('/health'),
 
@@ -373,6 +411,8 @@ export const api = {
     request<LearningPath>(
       `/api/path/${learnerId}${version === undefined ? '' : `?version=${version}`}`,
     ),
+
+  usage: () => request<Usage>('/api/usage'),
 
   whatIf: (learnerId: number, hoursPerWeek: number) =>
     request<WhatIf>('/api/path/whatif', {

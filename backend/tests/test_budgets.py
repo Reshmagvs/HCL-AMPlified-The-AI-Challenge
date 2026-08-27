@@ -74,10 +74,19 @@ READY = {"goal_text": "quantum computing", "hours_per_week": 6.0}
 PARTIAL = {"hours_per_week": 6.0}
 
 
-def test_intake_does_not_call_a_model_it_does_not_need() -> None:
-    """Both load-bearing fields are already in hand; the model would rephrase."""
-    provider = PacedProvider(1000.0)
-    assert not _worth_a_call(READY, provider)
+def test_a_complete_profile_still_gets_a_real_reply() -> None:
+    """The regression behind "the messages keep repeating".
+
+    This used to assert the opposite: with the goal and the hours already in
+    hand the model was skipped, on the grounds that it would only be
+    rephrasing an acknowledgement. The consequence was that a learner who kept
+    typing after their profile was complete received the *identical* templated
+    sentence on every turn, because a template has nothing else to say.
+
+    Conversation is the one thing only the model can do, so when it can answer
+    inside the budget, it answers -- complete profile or not.
+    """
+    assert _worth_a_call(READY, PacedProvider(1000.0))
 
 
 def test_intake_asks_a_fast_model_to_fill_a_gap() -> None:

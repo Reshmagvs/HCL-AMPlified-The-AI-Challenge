@@ -51,6 +51,51 @@
 }
 
 @layer components {
+  /*
+   * The hours slider.
+   *
+   * It was written as `appearance-none accent-clay-500`, which is a
+   * contradiction: removing the native appearance also removes the thumb, and
+   * `accent-color` only applies while the native appearance is intact. The
+   * result rendered as a six-pixel bar with nothing to grab, so the control
+   * looked broken because it *was* -- there was no thumb to drag.
+   *
+   * Styling the thumb explicitly is what makes `appearance-none` legitimate.
+   * Both vendor prefixes are needed and cannot be combined into one rule:
+   * an unrecognised selector invalidates the whole block.
+   */
+  .slider {
+    @apply h-1.5 w-full cursor-pointer appearance-none rounded-full bg-paper-300;
+  }
+
+  .slider::-webkit-slider-thumb {
+    @apply h-5 w-5 cursor-grab rounded-full border-2 border-paper-50 bg-clay-500;
+    -webkit-appearance: none;
+    appearance: none;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    transition: transform 120ms ease;
+  }
+
+  .slider::-moz-range-thumb {
+    @apply h-5 w-5 cursor-grab rounded-full border-2 border-paper-50 bg-clay-500;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    transition: transform 120ms ease;
+  }
+
+  .slider:hover::-webkit-slider-thumb,
+  .slider:focus-visible::-webkit-slider-thumb {
+    transform: scale(1.12);
+  }
+
+  .slider:hover::-moz-range-thumb,
+  .slider:focus-visible::-moz-range-thumb {
+    transform: scale(1.12);
+  }
+
+  .slider:focus-visible {
+    @apply outline-none ring-2 ring-clay-300 ring-offset-2 ring-offset-paper-50;
+  }
+
   .card {
     @apply rounded-xl border border-paper-400 bg-paper-50 shadow-card;
   }

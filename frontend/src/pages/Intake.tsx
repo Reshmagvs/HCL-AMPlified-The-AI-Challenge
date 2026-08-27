@@ -53,8 +53,11 @@ const HOW_IT_WORKS = [
 
 export default function Intake() {
   const navigate = useNavigate()
-  const { sessionId, transcript, profile, setSession, addTurn, setProfile, setLearner, setSeeded } =
-    useSession()
+  const {
+    sessionId, transcript, profile,
+    setSession, addTurn, setProfile, setLearner, setSeeded,
+    reset: resetSession,
+  } = useSession()
   const [draft, setDraft] = useState('')
   const [ready, setReady] = useState(false)
   const [degraded, setDegraded] = useState(false)
@@ -107,9 +110,29 @@ export default function Intake() {
       <div className="grid gap-7 lg:grid-cols-[minmax(0,1fr)_330px]">
         <section className="flex min-h-[46vh] flex-col">
           {started && (
-            <header className="mb-4">
-              <p className="label">Step 1 of 4</p>
-              <h1 className="mt-1 text-2xl">What are you aiming at?</h1>
+            <header className="mb-4 flex items-start justify-between gap-4">
+              <div>
+                <p className="label">Step 1 of 4</p>
+                <h1 className="mt-1 text-2xl">What are you aiming at?</h1>
+              </div>
+              {/*
+                Changing your mind halfway through describing a goal is common,
+                and until this there was no way back: the conversation only
+                accumulated, and a wrong goal could only be talked around.
+              */}
+              <button
+                type="button"
+                className="btn-quiet mt-1 shrink-0 text-xs"
+                title="Clear this conversation and describe a different goal"
+                onClick={() => {
+                  resetSession()
+                  setDraft('')
+                  setReady(false)
+                  setPlannable(true)
+                }}
+              >
+                Start again
+              </button>
             </header>
           )}
 

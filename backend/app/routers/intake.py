@@ -28,7 +28,7 @@ from sqlmodel import Session, select
 from app.config import get_settings
 from app.core.mastery import SELF_REPORT_CAP
 from app.core.skill_graph import load_graph
-from app.core.text_profile import extract_profile, next_question
+from app.core.text_profile import extract_profile, missing_field, next_question
 from app.db import get_session
 from app.llm import get_provider
 from app.llm.base import ProviderUnavailable, SchemaViolation, call_with_schema
@@ -144,7 +144,17 @@ def intake_message(
 
     extracted, reply, degraded = _extract(session, text)
     session.profile = _merge(session.profile, extracted)
-    session.transcript = [*session.transcript, {"role": "assistant", "text": reply}]
+    # The field this reply is chasing is recorded on the turn, so the next one
+    # can tell "asked again" from "asked for the first time" and rephrase
+    # rather than repeat. "__ready__" marks a turn with nothing left to ask.
+    session.transcript = [
+        *session.transcript,
+        {
+            "role": "assistant",
+            "text": reply,
+            "asked": missing_field(session.profile) or "__ready__",
+        },
+    ]
 
     db.add(session)
     db.commit()
@@ -159,26 +169,47 @@ def intake_message(
     )
 
 
+def _times_already_asked(session: IntakeSession, field: str | None) -> int:
+    """How many assistant turns in a row have already asked for this field.
+
+    Recorded on the transcript turn rather than in a new column, so no
+    migration is needed and the history stays self-describing. Counting only
+    the *trailing* run matters: a learner who answers, changes their mind and
+    is asked again should get the first, friendliest phrasing back.
+    """
+    if field is None:
+        field = "__ready__"
+    seen = 0
+    for turn in reversed(session.transcript):
+        if turn.get("role") != "assistant":
+            continue
+        if turn.get("asked") != field:
+            break
+        seen += 1
+    return seen
+
+
 def _worth_a_call(heuristic: dict[str, Any], provider) -> bool:
     """Whether asking the model for this turn is worth what it costs.
 
     Two reasons to decline, and neither of them degrades the answer.
 
-    **The rules already have everything that matters.** ``goal_text`` and
-    ``hours_per_week`` are the only fields a plan cannot be built without. When
-    both are in hand the model would be rephrasing an acknowledgement, and the
-    learner would wait for it.
+    There is one reason, and it is about time rather than usefulness: at three
+    tokens a second a 150-token reply is fifty seconds of a person watching a
+    text box. The deterministic extractor has already produced a correct
+    profile and a sensible next question, so the cost of declining is phrasing.
 
-    **The model cannot answer inside the budget.** At three tokens a second a
-    150-token reply is fifty seconds of a person watching a text box. The
-    deterministic extractor has already produced a correct profile and a
-    sensible next question, so the cost of declining is phrasing.
+    An earlier version also declined whenever the rules already had the goal
+    and the hours, on the grounds that the model would only be rephrasing an
+    acknowledgement. That was wrong, and it is the defect this rewrite fixes:
+    a learner who kept typing after their profile was complete got the *same
+    templated sentence* on every turn, because a template has nothing else to
+    say. Conversation is exactly what the model is for. When it can answer in
+    time, it answers.
 
-    Neither test is about which provider is configured, so a faster model or a
+    The test is not about which provider is configured, so a faster model or a
     machine with a GPU starts using the model again with nothing changed.
     """
-    if _is_ready(heuristic):
-        return False
     if not provider.affords(EXPECTED_EXTRACTION_TOKENS, get_settings().interactive_budget_seconds):
         logger.info(
             "intake extraction would take about %.0fs at %.1f tok/s -- using the rules",
@@ -204,13 +235,14 @@ def _extract(session: IntakeSession, latest: str) -> tuple[dict[str, Any], str, 
     model earns its place. Neither can blank out what the other found.
     """
     heuristic = extract_profile(latest, session.profile)
+    attempt = _times_already_asked(session, missing_field(heuristic))
 
     provider = get_provider()
     if not provider.available():
-        return heuristic, next_question(heuristic), True
+        return heuristic, next_question(heuristic, attempt), True
 
     if not _worth_a_call(heuristic, provider):
-        return heuristic, next_question(heuristic), False
+        return heuristic, next_question(heuristic, attempt), False
 
     prompt = INTAKE_EXTRACTION.format(
         transcript=_transcript(session), profile=session.profile or "{}"
@@ -236,7 +268,7 @@ def _extract(session: IntakeSession, latest: str) -> tuple[dict[str, Any], str, 
               if heuristic.get(field) and not result.profile.model_dump().get(field)]
     if missed:
         logger.info("model missed %s during intake; using the rule-based reply", missed)
-        reply = next_question(merged)
+        reply = next_question(merged, _times_already_asked(session, missing_field(merged)))
 
     return merged, reply, False
 

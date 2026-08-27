@@ -13,6 +13,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { queryState } from '../lib/queryState'
 import { useSession } from '../lib/store'
+import { UsagePanel } from './UsagePanel'
 
 const STEPS = [
   { to: '/', label: 'Describe', hint: 'Tell us your goal' },
@@ -23,6 +24,7 @@ const STEPS = [
 
 export default function Layout({ children }: { children: ReactNode }) {
   const learnerId = useSession((s) => s.learnerId)
+  const started = useSession((s) => s.transcript.length > 0)
   const reset = useSession((s) => s.reset)
   const { pathname } = useLocation()
   const currentStep = Math.max(0, STEPS.findIndex((step) => step.to === pathname))
@@ -71,12 +73,29 @@ export default function Layout({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="ml-auto flex items-center gap-2">
+            <UsagePanel />
             <StatusChip />
-            {learnerId !== null && (
+            {/*
+              Offered from the first typed message, not only once a plan
+              exists. Changing your mind halfway through describing a goal is
+              the most likely moment to want to start again, and until this it
+              was the one moment with no way to.
+            */}
+            {(learnerId !== null || started) && (
               <button
                 className="btn-quiet text-xs"
-                title="Clear this learner and start a new plan"
+                title={
+                  learnerId !== null
+                    ? 'Clear this learner and start a new plan'
+                    : 'Clear what you have typed and start the conversation again'
+                }
                 onClick={() => {
+                  if (
+                    learnerId !== null &&
+                    !window.confirm('Start over? This clears your plan and progress.')
+                  ) {
+                    return
+                  }
                   reset()
                   window.location.assign('/')
                 }}

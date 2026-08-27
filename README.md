@@ -66,11 +66,47 @@ Nothing in the critical path needs a hosted service.
 | Placement questions, curated subjects | A bank of 144 items, generated once offline and committed | No |
 | Explanations | Provenance computed as data, rendered from a template | No |
 | Assistant answers | Rule-based from your own plan rows, phrased by a model when one is fast enough | No |
-| **Designing a new subject** | A local model proposes structure only — never a fact, never a link | Model is local; the search is not |
+| **Designing a new subject** | A model proposes structure only — never a fact, never a link | Model is local unless a free hosted one is configured |
 | **Finding material for a new subject** | Live search, then every page fetched and checked | Yes, once per subject |
 
 Everything above the bold rows works with no model at all. The bold rows are the
 open-world half, and they are the only thing that needs one.
+
+### The model chain
+
+`LLM_PROVIDER=auto` builds a chain rather than picking one, and each link falls
+through to the next:
+
+```
+OpenRouter (free models)  →  Ollama (local)  →  offline templates
+```
+
+The order is the point. **Latency is what makes a conversation possible.** The
+same intake message takes ~3 s on a hosted free model and ~43 s on a 3B model
+running on a four-core laptop CPU — and the latency budgets below correctly
+refuse to make anyone wait 43 seconds, so the assistant fell back to templates
+and repeated itself. **Ollama is second because it is the thing that cannot run
+out**: free hosted models are throttled without warning, and when they are, a
+local model that takes a minute beats an error. Templates are last so that with
+nothing installed at all, every screen still answers.
+
+Only models that cost **exactly zero** are ever selected. The list is
+discovered from OpenRouter's own catalogue rather than hardcoded, so a model
+that stops being free stops being used; every response is checked for a
+reported cost, and any model that charges is dropped immediately. A configured
+`OPENROUTER_MODEL` is ignored unless the catalogue agrees it is free — the
+setting cannot start a bill by accident.
+
+`GET /api/usage`, and the panel in the header, show which provider is
+answering, the fallback order, requests and tokens spent, and the cost so far.
+It deliberately does **not** draw a progress bar: a free-tier key has no
+published daily allowance, so there is no denominator, and a bar reading "12%
+used" would be a number nobody measured.
+
+```bash
+# Free, no card: https://openrouter.ai/keys
+OPENROUTER_API_KEY=sk-or-v1-...
+```
 
 ### The local model
 
@@ -261,8 +297,11 @@ POST /api/topics/build          (returns immediately; poll GET /api/topics/build
 1. DESIGN     the model proposes 8–12 skills and, for each, which earlier
               skills it depends on. Structure only — never a fact, never a link.
               A prerequisite may only reference an EARLIER index, so a cycle is
-              not expressible rather than merely rejected.
-2. SEARCH     one live query per skill, built from the skill's own keywords
+              not expressible rather than merely rejected. It also classifies
+              the subject on three axes — technical, quantitative, practical —
+              which shape steps 2 and 6.
+2. SEARCH     one live query per skill, built from the skill's own keywords,
+              ending in a word chosen by what kind of subject it is
 3. VERIFY     every URL fetched; non-2xx, non-HTML, and bot walls discarded;
               title, description, provider, format and cost read off the page
 4. EMBED      new skills and resources vectorised locally
@@ -272,8 +311,42 @@ POST /api/topics/build          (returns immediately; poll GET /api/topics/build
 6. QUESTIONS  placement questions written in the background, one batched call
 ```
 
-About two minutes on a laptop CPU, once, ever — the result is shared, so the
-second person to ask the same thing waits 80 ms.
+About 80 s on a hosted free model, or two to four minutes on a laptop CPU —
+once, ever. The result is shared, so the second person to ask waits 80 ms.
+
+### Subjects must not leak into each other
+
+A learner asked for **business studies** and was given a curriculum of
+statistics, SQL, data visualisation and machine learning, then placement-tested
+on pandas. Three separate defects combined to produce that, and it is worth
+naming all three because only one of them is the obvious one.
+
+**The prompt invited it.** The syllabus instruction said to include
+prerequisites "from other subjects (the mathematics a topic requires, for
+instance)". Asked for prerequisites, a language model reaches for the ones it
+has seen most often, and that clause gave it permission. It now says the
+opposite: import from another field only when the learner genuinely cannot
+proceed without it, and *a subject that is not technical must not acquire
+programming*.
+
+**Resolution had no way to say "not here".** Nearest-neighbour over a closed set
+always returns something, so a goal with no home in the curriculum was handed
+the closest node available. Resolution now refuses when both coverage signals
+reject the goal, and the learner is told the subject has to be built. The
+refusal deliberately needs the *strong* verdict — an earlier version refused
+anything not confidently covered and rejected goals the curriculum genuinely
+teaches, which is the same failure wearing the opposite sign.
+
+**Skills lost their subject.** "Interpret a Balance Sheet" reads as generic
+once it is out of context, so question generation drifted. Every discovered
+skill now carries the subject it belongs to and that subject's kind, and both
+are stated on every line the question writer sees.
+
+Measured afterwards, "business studies" produces: the business environment,
+legal structures and ownership, financial statements, marketing principles,
+operations management, budgeting, strategy, HR, investment appraisal, market
+research, and business model design — and is placement-tested on the 4Ps, SWOT,
+NPV and supply chains. No code anywhere in it.
 
 ### Where the AI is, and where it deliberately is not
 
@@ -286,7 +359,8 @@ second person to ask the same thing waits 80 ms.
 | Learner state | Adaptive selection by `uncertainty × downstream unlocks` | A fixed 20-question quiz wastes the learner's time |
 | Resource binding | Hybrid: semantic relevance + rule-based feature scoring | Pure semantics ignores cost, format and level — most of what a learner cares about |
 | **Sequencing** | **Topological sort with a weighted tie-break** | **Not an ML problem. Using ML here would be worse and unexplainable** |
-| Explanation | Structured provenance → constrained narration | Free-form explanation is plausible-sounding and unverifiable |
+| Explanation | Structured provenance → one batched constrained narration | Free-form explanation is plausible-sounding and unverifiable. Batched because a dozen round trips never fit a latency budget; one does |
+| Which subject a skill belongs to | Declared at build time, stored per node | Inferring it later from the skill name is exactly how a business course acquired a Python exam |
 | Adaptation | Event-driven recompute + diff | Online learning has no data at this scale and cannot be demonstrated |
 
 ---
@@ -300,6 +374,7 @@ second person to ask the same thing waits 80 ms.
 | `POST /api/topics/build` | Start building a subject; returns immediately. `force` overrides a coverage verdict |
 | `GET /api/topics/build` | Progress: stage, detail, fraction, elapsed |
 | `GET /api/topics/sources` | Which discovery sources are answering |
+| `GET /api/usage` | Which model is answering, the fallback order, and what has been spent |
 | `POST /api/intake/message` | assistant reply + partial profile + `ready` |
 | `POST /api/intake/commit` | creates the learner, resolves the goal to node ids |
 | `GET /api/diagnostic/next/{lid}` | next question, or `{done: true}` |
@@ -430,7 +505,7 @@ never has to run them.
 ### Tests
 
 ```bash
-cd backend && .venv/Scripts/python -m pytest        # 129 tests, no network, no key
+cd backend && .venv/Scripts/python -m pytest        # 243 tests, no network, no key
 cd backend && .venv/Scripts/python -m scripts.journeys   # 80 end-to-end assertions
 cd frontend && npm run build                        # strict TypeScript, zero errors
 ```
@@ -451,7 +526,16 @@ network.
 
 An honest account, because the boundaries are as informative as the features.
 
-- **A discovered subject is only as good as a 3B model's idea of it.** The
+- **A free hosted model is a courtesy, not a guarantee.** OpenRouter's free
+  tier is throttled without warning and publishes no daily allowance, so there
+  is no number to show you and no promise to make. The chain falls back to the
+  local model when it happens, which is slower but cannot run out — the failure
+  mode is a wait, not an error.
+- **The subject classification is the model's own opinion of the subject.**
+  Whether business studies is "quantitative" is a judgement, and it is made
+  once, at build time, by the model writing the syllabus. It is used to shape
+  searches and questions, so a wrong call there quietly shapes both.
+- **A discovered subject is only as good as the model's idea of it.** The
   structure is validated — acyclic, in range, deduplicated — but nobody checks
   that "Quantum Circuit" really does depend on "Quantum Gates". For a curated
   track that judgement was made by a person; for a discovered one it was not.

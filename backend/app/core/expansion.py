@@ -128,11 +128,30 @@ class ProposedSkill(BaseModel):
 
 
 class ProposedSyllabus(BaseModel):
-    """A whole topic. ``track`` groups the skills the way curated tracks do."""
+    """A whole topic. ``track`` groups the skills the way curated tracks do.
+
+    The three flags are what stop every subject drifting technical. A learner
+    asking for business studies was handed statistics, SQL and machine
+    learning, then placement-tested on pandas -- because a language model asked
+    for "prerequisites" reaches for the ones it has seen most often, and the
+    prompt used to invite exactly that. Naming the axes forces the judgement to
+    be made explicitly, and the answer then shapes what is searched for and how
+    the learner is measured.
+    """
 
     topic: str = Field(min_length=2, max_length=90)
     track: str = ""
+    technical: bool = False
+    quantitative: bool = False
+    practical: bool = False
     skills: list[ProposedSkill] = Field(default_factory=list)
+
+    def domain(self) -> dict[str, bool]:
+        return {
+            "technical": self.technical,
+            "quantitative": self.quantitative,
+            "practical": self.practical,
+        }
 
 
 def syllabus_schema(min_skills: int, max_skills: int) -> dict[str, Any]:
@@ -149,6 +168,9 @@ def syllabus_schema(min_skills: int, max_skills: int) -> dict[str, Any]:
         "properties": {
             "topic": {"type": "string"},
             "track": {"type": "string"},
+            "technical": {"type": "boolean"},
+            "quantitative": {"type": "boolean"},
+            "practical": {"type": "boolean"},
             "skills": {
                 "type": "array",
                 "minItems": min_skills,
@@ -171,7 +193,7 @@ def syllabus_schema(min_skills: int, max_skills: int) -> dict[str, Any]:
                 },
             },
         },
-        "required": ["topic", "track", "skills"],
+        "required": ["topic", "track", "technical", "quantitative", "practical", "skills"],
     }
 
 
@@ -213,6 +235,13 @@ class Coverage:
     best_score: float
     threshold: float
     reason: str
+    # True only when *both* signals reject the goal: the curriculum does not use
+    # these words and nothing in it is semantically near. That is a different
+    # and much stronger claim than "not confidently covered", and it is the one
+    # resolution needs. Refusing to resolve on the weaker claim broke goals the
+    # curriculum genuinely teaches -- "I want to build websites end to end"
+    # scores 100% familiar and lands exactly on the similarity floor.
+    definitely_absent: bool = False
 
 
 @dataclass
@@ -483,11 +512,16 @@ def assess_coverage(goal_text: str, *, confirm_with_model: bool = False) -> Cove
     raw = best["score"]
     familiarity = _lexical_familiarity(goal_text)
 
+    # The reason is read aloud to a learner in the interface, so it is written
+    # for them. It used to be the arithmetic -- "the two signals disagree --
+    # similarity 0.67 against a 0.65 floor, and 23% of the words are familiar"
+    # -- which is honest, unarguable, and completely meaningless to the person
+    # being told it. The numbers still exist; they belong in the log line
+    # below, where the person who needs them will look.
     if raw >= certain:
         return Coverage(
             True, best["skill_id"], raw, certain,
-            f"{best['name']!r} matched at {raw:.2f}, at or above the {certain:.2f} a "
-            "curated skill scores against its own name",
+            f"this looks like {best['name']}, which we already teach",
         )
 
     semantically_close = raw >= hopeless
@@ -495,19 +529,24 @@ def assess_coverage(goal_text: str, *, confirm_with_model: bool = False) -> Cove
 
     if semantically_close and lexically_known:
         verdict, why = True, (
-            f"the curriculum already uses {familiarity:.0%} of these words, and "
-            f"{best['name']!r} is a close match at {raw:.2f}"
+            f"this looks close to {best['name']}, which we already teach"
         )
     elif not semantically_close and not lexically_known:
-        verdict, why = False, (
-            f"none of these words appear in the curriculum, and the nearest skill, "
-            f"{best['name']!r}, only scored {raw:.2f}"
+        logger.info(
+            "coverage: %r is absent (similarity %.2f, familiarity %.0f%%)",
+            goal_text[:60], raw, familiarity * 100,
+        )
+        return Coverage(
+            False, best["skill_id"], raw, hopeless,
+            "this subject is not in our curriculum yet",
+            definitely_absent=True,
         )
     else:
         verdict = False
-        why = (
-            f"the two signals disagree -- similarity {raw:.2f} against a {hopeless:.2f} "
-            f"floor, and {familiarity:.0%} of the words are familiar"
+        why = "we only partly cover this, so a plan built from it would have gaps"
+        logger.info(
+            "coverage: %r is uncertain (similarity %.2f vs floor %.2f, familiarity %.0f%%)",
+            goal_text[:60], raw, hopeless, familiarity * 100,
         )
         if confirm_with_model:
             judged = _confirm_with_model(goal_text, candidates)
@@ -610,8 +649,8 @@ def _sanitise(syllabus: ProposedSyllabus) -> list[ProposedSkill]:
     return cleaned
 
 
-def design_syllabus(goal_text: str) -> tuple[str, str, list[ProposedSkill]]:
-    """Ask the model for a prerequisite structure. Raises if it cannot."""
+def design_syllabus(goal_text: str) -> tuple[str, str, list[ProposedSkill], dict[str, bool]]:
+    """Ask the model for a prerequisite structure and its domain. Raises if it cannot."""
     provider = get_provider()
     if provider.name == "mock" or not provider.available():
         raise ProviderUnavailable(
@@ -640,7 +679,7 @@ def design_syllabus(goal_text: str) -> tuple[str, str, list[ProposedSkill]]:
     # grouping it answered "fundamentals", which would put quantum computing and
     # organic chemistry in the same track and make every id ambiguous.
     track = slug(topic)
-    return topic, track, skills
+    return topic, track, skills, syllabus.domain()
 
 
 # --------------------------------------------------------------------------- #
@@ -656,7 +695,7 @@ def _duration_hours(page: websearch.VerifiedPage) -> float:
     return max(MIN_DURATION_HOURS, round(hours * 4) / 4)
 
 
-def _search_query(skill: ProposedSkill, topic: str) -> str:
+def _search_query(skill: ProposedSkill, topic: str, domain: dict[str, bool] | None = None) -> str:
     """What to actually type into a search box for this skill.
 
     The skill's own keywords, not the topic name. Appending the topic seemed
@@ -668,6 +707,13 @@ def _search_query(skill: ProposedSkill, topic: str) -> str:
 
     The topic is still appended when the skill name is short enough to be
     ambiguous on its own and the keywords do not already disambiguate it.
+
+    The trailing word is chosen by what kind of subject this is. "Tutorial" is
+    the right word for something you do and the wrong one for something you
+    study: it pulls a history skill towards software walkthroughs, because that
+    is what the open web means by the word. A subject that is drilled wants
+    exercises, a quantitative one wants worked problems, and one that is read
+    wants an explanation.
     """
     keywords = " ".join(skill.keywords[:3])
     terms = f"{skill.name} {keywords}".strip()
@@ -675,13 +721,26 @@ def _search_query(skill: ProposedSkill, topic: str) -> str:
     topic_words = [w for w in _WORD_RE.findall(topic.lower()) if len(w) > 3]
     if len(terms.split()) < 4 and not any(word in combined for word in topic_words):
         terms = f"{terms} {topic}"
-    return f"{terms} tutorial"
+    return f"{terms} {_material_word(domain)}"
+
+
+def _material_word(domain: dict[str, bool] | None) -> str:
+    """The kind of material this subject is learned from."""
+    axes = domain or {}
+    if axes.get("technical"):
+        return "tutorial"
+    if axes.get("quantitative"):
+        return "worked examples practice problems"
+    if axes.get("practical"):
+        return "exercises practice"
+    return "explained introduction"
 
 
 def gather_resources(
     skills: list[tuple[str, ProposedSkill]],
     topic: str,
     progress: Callable[[str, str, float], None] | None = None,
+    domain: dict[str, bool] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, list[str]]]:
     """One live search per skill, concurrently. Returns entries and coverage.
 
@@ -691,7 +750,7 @@ def gather_resources(
     def one(item: tuple[str, ProposedSkill]) -> tuple[str, list[websearch.VerifiedPage]]:
         skill_id, skill = item
         return skill_id, websearch.find_resources(
-            _search_query(skill, topic), want=RESOURCES_PER_SKILL
+            _search_query(skill, topic, domain), want=RESOURCES_PER_SKILL
         )
 
     done = 0
@@ -775,7 +834,8 @@ def _assign_ids(track: str, skills: list[ProposedSkill]) -> list[str]:
 
 
 def _skill_entries(
-    ids: list[str], skills: list[ProposedSkill], track: str, topic: str
+    ids: list[str], skills: list[ProposedSkill], track: str, topic: str,
+    domain: dict[str, bool] | None = None,
 ) -> list[dict[str, Any]]:
     """Turn the proposal into skills.json records, keeping only new ids."""
     graph = load_graph()
@@ -796,6 +856,10 @@ def _skill_entries(
                 "keywords": skill.keywords or [skill.name.lower()],
                 "discovered": True,
                 "topic": topic,
+                # Stored per skill rather than per topic so it survives into
+                # the merged graph, where nothing else knows which topic a node
+                # came from. Question generation and material search both read it.
+                "domain": dict(domain or {}),
             }
         )
     return entries
@@ -840,14 +904,16 @@ def expand(
 
     report("Designing the syllabus", "Working out what this subject depends on", 0.05)
     try:
-        topic, track, skills = design_syllabus(goal_text)
+        topic, track, skills, domain = design_syllabus(goal_text)
     except (ProviderUnavailable, SchemaViolation) as exc:
         return Expansion(ok=False, reason=str(exc)[:200], seconds=round(time.perf_counter() - started, 2))
 
     ids = _assign_ids(track, skills)
-    skill_entries = _skill_entries(ids, skills, track, topic)
+    skill_entries = _skill_entries(ids, skills, track, topic, domain)
     report("Finding materials", f"{len(skills)} skills to cover", 0.45)
-    courses, _ = gather_resources(list(zip(ids, skills, strict=True)), topic, progress)
+    courses, _ = gather_resources(
+        list(zip(ids, skills, strict=True)), topic, progress, domain
+    )
 
     if not courses:
         return Expansion(

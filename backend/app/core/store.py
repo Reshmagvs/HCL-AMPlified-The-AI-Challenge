@@ -130,8 +130,34 @@ def topic_key(goal_text: str) -> str:
 
 
 def find_topic(goal_text: str) -> dict[str, Any] | None:
-    """The cached expansion for this goal, if one exists."""
-    return load_topics().get(topic_key(goal_text))
+    """The cached expansion for this goal, if one exists.
+
+    Exact key first, because that is the common case and it is free.
+
+    Then containment, because the exact key is not enough in practice: a
+    learner types "i want to master business studies", intake extracts the goal
+    as "master business studies", and those are two different keys for one
+    subject. The learner was then told their freshly built subject was not
+    taught here, and offered to build it a second time.
+
+    Containment is deliberately the only fuzziness allowed. It cannot match two
+    genuinely different subjects -- one string has to literally contain the
+    other -- so it fixes the trimming case without opening the door to the
+    nearest-neighbour guessing this module exists to avoid.
+    """
+    topics = load_topics()
+    key = topic_key(goal_text)
+    exact = topics.get(key)
+    if exact is not None:
+        return exact
+
+    if len(key) < 6:
+        return None
+    for candidate_key, record in topics.items():
+        if key in candidate_key or candidate_key in key:
+            logger.info("goal %r matched the built topic %r", key[:60], record.get("topic"))
+            return record
+    return None
 
 
 def vectors_path(kind: str, embedder: str) -> Path:
@@ -249,6 +275,47 @@ def alias_topic(goal_text: str, record: dict[str, Any]) -> None:
         topics = load_topics()
         topics[topic_key(goal_text)] = {**record, "query": goal_text, "aliased": True}
         _write_json(generated_dir() / TOPICS_FILE, topics)
+
+
+def forget_topic(goal_text: str) -> bool:
+    """Remove one built subject and everything only it owned. True if it existed.
+
+    The overlay is a cache, and a cache with a bad entry in it is worse than an
+    empty one: a syllabus that drifted off-subject keeps matching the goal that
+    produced it, so the learner cannot get a better answer by asking again.
+    Skills and resources shared with another topic are left alone.
+    """
+    key = topic_key(goal_text)
+    with _write_lock:
+        topics = load_topics()
+        record = topics.pop(key, None)
+        if record is None:
+            return False
+
+        still_used_skills = {i for t in topics.values() for i in t.get("skill_ids", [])}
+        still_used_courses = {i for t in topics.values() for i in t.get("course_ids", [])}
+        drop_skills = set(record.get("skill_ids", [])) - still_used_skills
+        drop_courses = set(record.get("course_ids", [])) - still_used_courses
+
+        _write_json(generated_dir() / TOPICS_FILE, topics)
+        _write_json(
+            generated_dir() / SKILLS_FILE,
+            [e for e in load_skills() if e["id"] not in drop_skills],
+        )
+        _write_json(
+            generated_dir() / COURSES_FILE,
+            [e for e in load_courses() if e["id"] not in drop_courses],
+        )
+        bank = load_generated_questions()
+        for skill_id in drop_skills:
+            bank.pop(skill_id, None)
+        _write_json(generated_dir() / QUESTIONS_FILE, bank)
+
+    logger.info(
+        "forgot topic %r: %d skills, %d resources removed",
+        record.get("topic"), len(drop_skills), len(drop_courses),
+    )
+    return True
 
 
 def clear() -> None:

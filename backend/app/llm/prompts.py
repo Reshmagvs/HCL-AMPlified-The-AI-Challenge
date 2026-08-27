@@ -131,6 +131,30 @@ Output JSON only.
 """.replace("{mark}", MARK_RATIONALE)
 
 
+RATIONALE_BATCH = """{mark}
+Below are provenance records computed by a deterministic planner, one per step
+of a learner's plan. Turn EACH into exactly two sentences addressed to the
+learner.
+
+PROVENANCE RECORDS:
+{records}
+
+Rules:
+- State ONLY facts present in that step's record. You have no other context,
+  and any claim not supported by these fields is a fabrication.
+- Sentence one: why this skill is needed for their goal, and where they
+  currently stand.
+- Sentence two: why this specific resource, and why this week.
+- Plain second-person English. No lists, no headings, no markdown, no emoji.
+- Write a distinct pair of sentences for every index. Do not repeat one
+  rationale across steps, and do not refer to "the previous step".
+
+Return JSON mapping each index to its two sentences:
+{{"by_index": {{"0": "<two sentences>", "1": "<two sentences>"}}}}
+Output JSON only.
+""".replace("{mark}", MARK_RATIONALE)
+
+
 CHAT_GROUNDED = """{mark}
 You are Lodestar's study assistant. Answer using ONLY the learner context below.
 
@@ -264,6 +288,14 @@ SKILLS:
 {skill_block}
 
 For every skill:
+- Ask about THAT skill, in ITS OWN subject. Each skill below carries the subject
+  it belongs to; a question that strays into another field measures nothing. A
+  business studies skill is not tested with a Python question, and a music
+  theory skill is not tested with a statistics question -- however tempting the
+  general phrasing of the skill name may be.
+- Match the kind of question to the kind of subject. A quantitative skill can
+  ask the learner to work something out; a subject that is studied rather than
+  computed should ask them to apply an idea to a situation.
 - Test understanding or application, never trivia or vocabulary recall. A learner
   who has genuinely used the skill should answer correctly; one who has only read
   about it should not.
@@ -325,8 +357,31 @@ SYLLABUS_DESIGN = """Design a learning curriculum for this goal:
 
 Break the subject into between 8 and {max_skills} concrete skills, ordered so
 that nothing appears before what it depends on. Start from the genuine
-prerequisites a beginner needs, including any from other subjects (the
-mathematics a topic requires, for instance), and end at the goal itself.
+prerequisites a beginner needs and end at the goal itself.
+
+STAY INSIDE THE SUBJECT. Import a prerequisite from another field only when a
+learner genuinely cannot proceed without it -- quantum computing really does
+need complex numbers, and that is the kind of case this allows. It is not a
+licence to make every subject quantitative or technical:
+
+  - A subject that is not mathematical must not acquire mathematics.
+  - A subject that is not technical must not acquire programming, SQL,
+    data visualisation or machine learning.
+  - "Business studies" is management, finance, marketing and operations. It is
+    NOT data analytics. "Music theory" is notation and harmony, not acoustics
+    programming. "History" is sources, chronology and causation, not statistics.
+
+If you find yourself adding a coding or statistics step to a subject that is
+studied rather than computed, you have drifted. Delete it and give the learner
+a step from their actual subject instead.
+
+Also classify the subject honestly, because the placement questions and the
+material search are shaped by it:
+
+  technical     true only if the learner will write code or drive technical tooling
+  quantitative  true only if the learner must do mathematics to progress
+  practical     true if the skill is performed and drilled (an instrument, a lab,
+                a language), false if it is principally understood and discussed
 
 For each skill give:
   name        a specific skill, not a chapter title ("Qubits and Superposition",
@@ -347,6 +402,7 @@ Do not invent courses, websites, links, prices or statistics. Structure only.
 Return JSON only, no prose, no markdown fences:
 {{"topic": "<short name for the subject>",
   "track": "<one or two word grouping, lowercase>",
+  "technical": false, "quantitative": false, "practical": false,
   "skills": [
     {{"name": "...", "keywords": ["...", "..."],
       "difficulty": 1, "hours": 6, "requires": []}}

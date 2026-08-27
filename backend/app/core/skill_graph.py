@@ -76,6 +76,18 @@ class SkillNode:
     est_hours: float
     assessable: bool
     keywords: tuple[str, ...]
+    # Which subject a discovered node belongs to, and what kind of subject it
+    # is. Empty for curated nodes, whose track already carries both. These
+    # exist so that measuring and searching for a skill can stay inside its own
+    # field -- a business studies skill must not be tested with a Python
+    # question, and the only way to know that is to carry the subject with it.
+    topic: str = ""
+    domain: tuple[str, ...] = ()
+
+    @property
+    def subject(self) -> str:
+        """The subject to name when talking about this skill."""
+        return self.topic or self.track.replace("_", " ")
 
     @property
     def embed_text(self) -> str:
@@ -234,6 +246,10 @@ def _build_nodes(raw: list[dict[str, Any]]) -> dict[str, SkillNode]:
             est_hours=float(entry["est_hours"]),
             assessable=bool(entry.get("assessable", True)),
             keywords=tuple(entry.get("keywords", [])),
+            topic=entry.get("topic", ""),
+            domain=tuple(
+                sorted(axis for axis, on in (entry.get("domain") or {}).items() if on)
+            ),
         )
     return nodes
 

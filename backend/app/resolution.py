@@ -156,6 +156,29 @@ def resolve_goal(goal_text: str) -> tuple[list[str], list[dict[str, Any]], bool]
     if not candidates:
         return [], [], True
 
+    # Nearest-neighbour over a closed set cannot say "I do not teach this", so
+    # asked for business studies it returned the closest thing it had, which
+    # was Python -- and the learner was then placement-tested on pandas for a
+    # subject with no code in it. Similarity within a domain is a refinement;
+    # similarity across domains is a category error, and no amount of ranking
+    # fixes it because the right answer is not in the list.
+    #
+    # So the coverage check that already guards the *interface* now also
+    # guards resolution -- but on its strongest verdict only. "Not confidently
+    # covered" is far too weak a reason to refuse: it rejects goals the
+    # curriculum really does teach whenever the two signals merely disagree.
+    # ``definitely_absent`` means both signals rejected it, which is the case
+    # that actually produces a plan for the wrong subject.
+    from app.core.expansion import assess_coverage
+
+    verdict = assess_coverage(goal_text)
+    if verdict.definitely_absent:
+        logger.info(
+            "refusing to resolve %r onto the curated graph: %s",
+            goal_text[:60], verdict.reason[:120],
+        )
+        return [], candidates, False
+
     allowed = {c["skill_id"] for c in candidates}
     fallback = [candidates[0]["skill_id"]]
 

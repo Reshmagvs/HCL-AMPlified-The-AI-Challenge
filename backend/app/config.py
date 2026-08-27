@@ -42,6 +42,16 @@ class Settings(BaseSettings):
     ollama_num_ctx: int = 4096
     # 0 means "use physical core count", which beat the logical count in testing.
     ollama_threads: int = 0
+    # --- OpenRouter (hosted, free models only) ------------------------------
+    # Present so the conversational layer stays responsive on hardware where
+    # the local model is too slow to wait for. Only zero-cost models are ever
+    # selected, and the selection is discovered from OpenRouter's own
+    # catalogue rather than hardcoded -- see llm/openrouter.py.
+    openrouter_api_key: str = ""
+    # Optional preference. Ignored unless the catalogue agrees it is free, so
+    # this setting cannot be used to start spending money by accident.
+    openrouter_model: str = ""
+
     gemini_api_key: str = ""
     gemini_model: str = "gemini-3.5-flash-lite"
     gemini_embed_model: str = "gemini-embedding-2"
@@ -72,7 +82,11 @@ class Settings(BaseSettings):
     # --- Latency budgets ----------------------------------------------------
     # How long the optional prose layer may add to generating a plan. The
     # reason text is computed either way; this only buys phrasing.
-    narration_budget_seconds: float = 6.0
+    # Narration is now a single batched request rather than one call per step,
+    # so this is the wait for one reply of roughly 90 tokens per step -- not
+    # the sum of a dozen round trips. Six seconds was the right number for the
+    # old shape and guaranteed templates under the new one.
+    narration_budget_seconds: float = 20.0
 
     # How long a model may take on a turn the learner is waiting through --
     # an intake reply, a chat answer, resolving a goal at commit time. Every
