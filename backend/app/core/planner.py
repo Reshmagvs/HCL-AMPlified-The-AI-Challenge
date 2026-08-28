@@ -26,6 +26,10 @@ boundary.
 The planner is pure. It receives an already-resolved graph, mastery table and
 preferences, touches no database, calls no model, and returns a value. That is
 what makes the correctness properties testable at all.
+
+The five steps above are the actual idea of Lodestar; everything else in this
+codebase exists to feed them or to show what they produced. Designed and
+written by Alfred Mathew.
 """
 
 from __future__ import annotations

@@ -49,8 +49,11 @@ demo/audio/
 
 # Root-level planning/notes docs: kept locally as working references, not
 # part of the published repo. README stays -- it's the front door.
+# (PROJECT_GUIDE.md -- the full architecture-and-flow explainer -- is covered
+# by this wildcard; named explicitly too so the intent survives a future edit.)
 /*.md
 !/README.md
+/PROJECT_GUIDE.md
 
 # The problem-statement PDF: reference material, not part of the repo.
 /*.pdf

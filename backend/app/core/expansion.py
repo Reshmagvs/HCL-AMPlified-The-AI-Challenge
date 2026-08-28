@@ -35,6 +35,8 @@ the planner, the diagnostic and the dashboard all treat a discovered topic
 exactly as they treat a curated one. No code downstream of this module knows the
 difference, which is the point: sequencing was always the product, and the graph
 was only ever its input.
+
+Written by Alfred Mathew, the day the closed world stopped being closed.
 """
 
 from __future__ import annotations

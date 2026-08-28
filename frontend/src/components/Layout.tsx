@@ -115,6 +115,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           Every resource in Lodestar is a real, working link from a checked catalogue — nothing is
           invented. Your plan is stored only on this machine.
         </p>
+        <p className="mt-1 text-[11px] text-ink-300">Designed and built by Alfred Mathew.</p>
       </footer>
     </div>
   )

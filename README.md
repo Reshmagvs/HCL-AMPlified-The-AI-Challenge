@@ -15,7 +15,9 @@ a prerequisite structure for the subject, searches the live web for material,
 fetches every page before using it, and merges the result into the same graph
 the planner already works on. Nothing downstream knows the difference.
 
-**It runs entirely on your machine.** No API key, no account, no quota. The only
+**It needs no API key to run.** A free OpenRouter key makes every conversation
+in it fast — without one it falls back to a local model, then to offline
+templates, so it always answers, just not always quickly. The only other
 network use is looking for learning material the first time a new subject is
 asked for.
 
@@ -31,10 +33,13 @@ start.bat
 
 That is the whole thing. `start.bat` finds Python and Node, creates the virtual
 environment, installs dependencies **only when `requirements.txt` actually
-changed**, writes `.env`, prepares the database, downloads the sentence-
-embedding model once (~130 MB), checks the local language model (starting its
-daemon if it is installed but idle), starts both servers, waits for the health
-check and opens a browser.
+changed**, writes `.env`, and — the first time only — asks for a free
+[OpenRouter key](https://openrouter.ai/keys) so conversations run at hosted
+speed rather than laptop-CPU speed; pressing Enter skips it and the app still
+runs, just slower. It then prepares the database, downloads the sentence-
+embedding model once (~130 MB), checks the local model as a fallback (starting
+its daemon if it is installed but idle), starts both servers, waits for the
+health check and opens a browser.
 
 | Command | Effect |
 |---|---|
@@ -606,3 +611,5 @@ Built for the AMPlified Round 2 prototype brief, *AI-Powered Personalized
 Learning Path Recommender*. The skill graph, catalogue pipeline, planner and
 evaluation harness are original work; learning resources are third-party and
 linked, never rehosted.
+
+Designed and built end to end, solo, by **Alfred Mathew**.

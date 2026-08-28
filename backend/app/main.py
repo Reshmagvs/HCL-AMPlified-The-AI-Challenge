@@ -3,6 +3,8 @@
 Assembles the app: logging, CORS, a request-id middleware, the routers, and a
 ``/health`` endpoint that answers from already-loaded process state so it stays
 well under 50ms and never touches the LLM.
+
+Lodestar was designed and built end to end by Alfred Mathew.
 """
 
 from __future__ import annotations

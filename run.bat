@@ -84,28 +84,57 @@ if not "%REQ_HASH%"=="%OLD_HASH%" (
 REM --- 5. Environment file ----------------------------------------------------
 if not exist ".env" (
     copy /y ".env.example" ".env" >nul
-    echo [4/7] Created .env from .env.example ^(mock mode, no API key needed^)
+    echo [4/7] Created .env from .env.example ^(runs with no key, just slower^)
 ) else (
     echo [4/7] Using existing .env
 )
 
-REM --- 5b. Local language model -----------------------------------------------
-REM Lodestar's language layer is local: no key, no quota, nothing leaves the
-REM machine. Everything except building a *brand-new* subject works without it,
-REM so a missing model is reported plainly rather than treated as fatal.
+REM --- 5a. OpenRouter API key ---------------------------------------------
+REM OpenRouter is first in the language-model chain because it is fast: the
+REM same intake message that takes ~43 s on a laptop CPU answers in ~3 s
+REM hosted, and the latency budgets refuse to make anyone wait 43 seconds --
+REM without a key that refusal is exactly what used to make the assistant
+REM fall back to templates and repeat itself. So a missing key is asked for
+REM once, here, rather than left to be discovered as sluggish conversation
+REM later. Pressing Enter skips it; the chain still works without one.
+set "OR_KEY="
+for /f "usebackq tokens=1,* delims==" %%A in (`findstr /b /c:"OPENROUTER_API_KEY=" ".env" 2^>nul`) do set "OR_KEY=%%B"
+if not defined OR_KEY (
+    echo [4b/7] No OpenRouter key in .env
+    echo        Free, no card: https://openrouter.ai/keys
+    echo        Paste a key to enable it, or press Enter to skip ^(local model / templates instead^):
+    set /p "OR_KEY_INPUT=       OpenRouter API key: "
+    if not "!OR_KEY_INPUT!"=="" (
+        set "LODESTAR_NEW_KEY=!OR_KEY_INPUT!"
+        %PY% -c "import os,pathlib,re; key=os.environ['LODESTAR_NEW_KEY']; p=pathlib.Path('.env'); s=p.read_text(encoding='utf-8'); s=re.sub(r'(?m)^OPENROUTER_API_KEY=.*$','OPENROUTER_API_KEY='+key,s,count=1) if re.search(r'(?m)^OPENROUTER_API_KEY=',s) else s.rstrip('\n')+'\nOPENROUTER_API_KEY='+key+'\n'; p.write_text(s,encoding='utf-8')"
+        echo        Saved to .env
+    ) else (
+        echo        Skipped -- falling back to the local model, then templates.
+    )
+) else (
+    echo [4b/7] OpenRouter key present
+)
+
+REM --- 5b. Local language model, the fallback tier -----------------------
+REM Ollama is the second link in the chain: no key, no quota, and unlike a
+REM free hosted model it cannot be throttled. Everything except building a
+REM *brand-new* subject also works with neither configured, so a missing
+REM model is reported plainly rather than treated as fatal.
 REM
 REM "where ollama" is not the question -- an installed binary with no daemon
 REM running looks identical to a working one from here, and the product then
-REM quietly falls back to templates. So the daemon is probed, started if it is
+REM quietly falls back further. So the daemon is probed, started if it is
 REM installed but idle, and the model checked for by name.
 echo [5a/7] Checking the local model
 call :model_status
 if "%MODEL_STATE%"=="1" (
     where ollama >nul 2>&1
     if errorlevel 1 (
-        echo       Ollama is not installed. Lodestar runs fully without it, but cannot
-        echo       build a curriculum for a subject outside the curated 152 skills.
-        echo       To enable that: https://ollama.com/download
+        echo       Ollama is not installed. Lodestar runs fully without it, but
+        echo       building a curriculum for a subject outside the curated 152
+        echo       skills, or holding a conversation with no OpenRouter key, will
+        echo       fall straight to offline templates. To enable it:
+        echo       https://ollama.com/download
     ) else (
         echo       Ollama is installed but not running - starting it
         start "Ollama" /min cmd /c "ollama serve"
