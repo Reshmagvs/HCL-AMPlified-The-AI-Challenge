@@ -604,12 +604,3 @@ An honest account, because the boundaries are as informative as the features.
   finishes early — but it reads oddly on the dashboard.
 
 ---
-
-## Attribution
-
-Built for the AMPlified Round 2 prototype brief, *AI-Powered Personalized
-Learning Path Recommender*. The skill graph, catalogue pipeline, planner and
-evaluation harness are original work; learning resources are third-party and
-linked, never rehosted.
-
-Designed and built end to end, solo, by **Alfred Mathew**
