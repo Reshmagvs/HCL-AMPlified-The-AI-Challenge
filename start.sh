@@ -4,10 +4,10 @@ set -e
 # Railway deployment script for Lodestar backend
 echo "Starting Lodestar backend deployment..."
 
-# Install backend dependencies
-echo "Installing backend dependencies..."
+# Install dependencies
+echo "Installing dependencies..."
 pip install --upgrade pip
-pip install -r backend/requirements.txt
+pip install -r requirements.txt
 
 # Change to backend directory
 cd backend
