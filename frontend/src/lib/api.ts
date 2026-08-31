@@ -14,7 +14,7 @@
 
 export const API_BASE: string =
   (import.meta.env.VITE_API_BASE as string | undefined)?.replace(/\/$/, '') ??
-  'http://127.0.0.1:8000'
+  'https://hcl-amplified-the-ai-challenge-production.up.railway.app'
 
 export class ApiError extends Error {
   readonly status: number
