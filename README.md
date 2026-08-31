@@ -612,4 +612,4 @@ Learning Path Recommender*. The skill graph, catalogue pipeline, planner and
 evaluation harness are original work; learning resources are third-party and
 linked, never rehosted.
 
-Designed and built end to end, solo, by **Alfred Mathew**.
+Designed and built end to end, solo, by **Alfred Mathew**
