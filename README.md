@@ -1,4 +1,4 @@
-# Lodestar (AI Powered Learning Agent)
+# Lodestar (AI Powered Learning Tool)
 
 **Learning is a dependency graph, not a search result.**
 
